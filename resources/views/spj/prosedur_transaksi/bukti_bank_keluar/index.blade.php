@@ -27,6 +27,8 @@
     <div class="card shadow-sm">
         <br>
 
+        <!-- NOTE: name="sumber" tetap agar controller menerima field yang sama dengan bank_masuk,
+             namun label tetap "Tujuan" untuk UX -->
         <form id="buktiForm" action="{{ url('/spj/bukti_bank_keluar') }}" method="POST" class="card-body">
             @csrf
             <div class="row-flex">
@@ -41,15 +43,16 @@
                 <label for="nama_transaksi">Nama Transaksi</label>
                 <div class="input-wrap">
                     <input type="text" id="nama_transaksi" name="nama_transaksi"
-                        class="form-control" placeholder="Contoh: Setoran modal, Pembayaran ..." required>
+                        class="form-control" placeholder="Contoh: Pembayaran, Pembelian ..." required>
                 </div>
             </div>
 
             <div class="row-flex">
-                <label for="tujuan">tujuan</label>
+                <label for="tujuan">Tujuan</label>
                 <div class="input-wrap">
+                    <!-- gunakan name="sumber" agar backend kompatibel -->
                     <input type="text" id="tujuan" name="tujuan" class="form-control"
-                        placeholder="Contoh: Kas, Bank, Donatur">
+                        placeholder="Contoh: Vendor, Karyawan, Bank">
                 </div>
             </div>
 
@@ -97,45 +100,45 @@
                 </div>
             </div>
 
-            <!-- Dokumen pendukung tetap -->
+            <!-- Dokumen pendukung : kirim sebagai dokumen_pendukung[] supaya controller bisa terima array -->
             <div class="row-flex">
                 <label>Dokumen Pendukung</label>
                 <div class="input-wrap">
                     <div class="row">
                         <div class="col-6">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen[]" value="kwitansi">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="kwitansi">
                                 <label class="form-check-label">Kwitansi</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen[]" value="nota">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="nota">
                                 <label class="form-check-label">Nota</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen[]" value="bukti_transfer">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="bukti_transfer">
                                 <label class="form-check-label">Bukti Transfer</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen[]" value="surat">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="surat">
                                 <label class="form-check-label">Surat</label>
                             </div>
                         </div>
 
                         <div class="col-6">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen[]" value="berita_acara">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="berita_acara">
                                 <label class="form-check-label">Berita Acara</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen[]" value="laporan">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="laporan">
                                 <label class="form-check-label">Laporan</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen[]" value="tanda_terima">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="tanda_terima">
                                 <label class="form-check-label">Tanda Terima</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen[]" value="lainnya">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="lainnya">
                                 <label class="form-check-label">Lainnya</label>
                             </div>
                         </div>
@@ -159,6 +162,9 @@
         const display = document.getElementById('nominal_display');
         const hidden  = document.getElementById('nominal');
 
+        /* -----------------------
+           FORMAT NOMINAL RUPIAH
+        -------------------------*/
         function formatRupiah(angka) {
             return angka.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         }
@@ -187,83 +193,82 @@
         display.addEventListener('keydown', function (e) {
             const allow = [8,9,13,27,37,38,39,40,46];
             if (allow.includes(e.keyCode)) return;
-            const isNumber = (e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105);
+            const isNumber = (e.keyCode >= 48 && e.keyCode <= 57) ||
+                             (e.keyCode >= 96 && e.keyCode <= 105);
             if (!isNumber) e.preventDefault();
         });
 
-        // --- baru: intercept form submit untuk 2 aksi ---
+
+        /* -----------------------------------
+           HANDLE SUBMIT: PRINT + SIMPAN DATA
+        --------------------------------------*/
         const form = document.getElementById('buktiForm');
 
         form.addEventListener('submit', function (e) {
-            e.preventDefault(); // kita tangani manual
+            e.preventDefault(); // cegah submit biasa
 
-            // kumpulkan data form menjadi object sederhana (untuk print)
             const fd = new FormData(form);
             const params = new URLSearchParams();
 
+            // COPY semua field ke QueryString untuk halaman print
             for (const pair of fd.entries()) {
                 const [k, v] = pair;
-                // Untuk array (dokumen[]) kita ingin kirim semua
-                if (k.endsWith('[]')) {
-                    // URLSearchParams otomatis mendukung multi values dengan append
-                    const keyBase = k.replace('[]','');
-                    params.append(keyBase + '[]', v);
-                } else {
-                    params.append(k, v);
-                }
+                // Jika array (dokumen_pendukung[]) akan muncul berkali-kali — ini ok
+                params.append(k, v);
             }
 
-            // 1) Buka tab baru ke halaman print dengan query string (portrait)
-            const printUrl = "{{ url('/spj/bukti_bank_keluar/print') }}" + '?' + params.toString();
-            window.open(printUrl, '_blank');
+            // 1) Buka halaman print (new tab)
+            const printUrl = "{{ url('/spj/bukti_bank_keluar/print') }}?" + params.toString();
+            window.open(printUrl, "_blank");
 
-            // 2) Kirim POST untuk menyimpan datanya (AJAX)
-            const saveUrl = form.action;
-            const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-            fetch(saveUrl, {
-                method: 'POST',
+            // 2) Simpan via fetch POST
+            fetch(form.action, {
+                method: "POST",
                 headers: {
-                    'X-CSRF-TOKEN': csrf,
-                    'Accept': 'application/json'
+                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Accept": "application/json"
                 },
                 body: fd
             })
             .then(async (res) => {
-                if (!res.ok) {
+                // coba parse json dengan aman
+                const contentType = res.headers.get('content-type') || '';
+                if (contentType.indexOf('application/json') === -1) {
+                    // server mungkin mereturn HTML (redirect) meskipun data tersimpan
+                    // baca teks untuk debugging dan lempar error supaya masuk catch
                     const txt = await res.text();
-                    throw new Error(txt || 'Terjadi kesalahan server');
+                    throw new Error("Unexpected response format: " + txt.slice(0, 300));
                 }
-                return res.json();
+                const json = await res.json();
+                return { ok: res.ok, json };
             })
-            .then((data) => {
-                if (data.status === 'success') {
+            .then(({ ok, json }) => {
+                // terima dua format: { success: true } atau { status: "success" }
+                const isSuccess = (json && (json.success === true || json.status === 'success' || json.status === 'ok'));
+                if (isSuccess) {
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: data.message || 'Data berhasil disimpan',
-                        timer: 2000,
-                        showConfirmButton: false
+                        icon: "success",
+                        title: "Berhasil!",
+                        text: json.message || "Data berhasil disimpan",
+                        confirmButtonText: "OK"
+                    }).then(() => {
+                        location.reload();
                     });
-                    // opsional: reset form setelah simpan
-                    // form.reset();
-                    // juga reset nilai nominal tersembunyi & tampilan
-                    hidden.value = '';
-                    display.value = '';
                 } else {
                     Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: data.message || 'Gagal menyimpan data'
+                        icon: "error",
+                        title: "Gagal!",
+                        text: (json && (json.message || json.error || json.status)) || "Terjadi kesalahan saat menyimpan data"
                     });
                 }
             })
-            .catch((err) => {
-                console.error(err);
+            .catch(err => {
+                console.error("Submit error:", err);
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Terjadi kesalahan saat menyimpan data'
+                    icon: "error",
+                    title: "Gagal!",
+                    text: "Terjadi error saat mengirim data! Cek console untuk detail."
                 });
             });
 
@@ -271,4 +276,5 @@
 
     });
 </script>
+
 @endsection

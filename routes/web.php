@@ -487,25 +487,37 @@ Route::delete('/spj/arsip_kelembagaan/{id}', [ArsipKelembagaanController::class,
 // prosedur transaksi
 Route::get('/spj/bukti_kas_masuk', [ProsedurTransaksiController::class, 'bukti_kas_masuk'])->middleware(['auth', 'role_user:3']);
 Route::post('/spj/bukti_kas_masuk', [ProsedurTransaksiController::class, 'store_kas_masuk'])->middleware(['auth', 'role_user:3']);
+Route::put('/spj/bukti_kas_masuk/{id}', [ProsedurTransaksiController::class, 'update_kas_masuk'])->middleware(['auth', 'role_user:3']);
+Route::delete('/spj/bukti_kas_masuk/{id}', [ProsedurTransaksiController::class, 'destroy_kas_masuk'])->middleware(['auth', 'role_user:3']);
 Route::get('/spj/bukti_kas_masuk/print', [ProsedurTransaksiController::class, 'print_kas_masuk'])->middleware(['auth', 'role_user:3']);
 
 Route::get('/spj/bukti_kas_keluar', [ProsedurTransaksiController::class, 'bukti_kas_keluar'])->middleware(['auth', 'role_user:3']);
 Route::post('/spj/bukti_kas_keluar', [ProsedurTransaksiController::class, 'store_kas_keluar'])->middleware(['auth', 'role_user:3']);
+Route::put('/spj/bukti_kas_keluar/{id}', [ProsedurTransaksiController::class, 'update_kas_keluar'])->middleware(['auth', 'role_user:3']);
+Route::delete('/spj/bukti_kas_keluar/{id}', [ProsedurTransaksiController::class, 'destroy_kas_keluar'])->middleware(['auth', 'role_user:3']);
 Route::get('/spj/bukti_kas_keluar/print', [ProsedurTransaksiController::class, 'print_kas_keluar'])->middleware(['auth', 'role_user:3']);
 
 Route::get('/spj/bukti_bank_masuk', [ProsedurTransaksiController::class, 'bukti_bank_masuk'])->middleware(['auth', 'role_user:3']);
 Route::post('/spj/bukti_bank_masuk', [ProsedurTransaksiController::class, 'store_bank_masuk'])->middleware(['auth', 'role_user:3']);
+Route::put('/spj/bukti_bank_masuk/{id}', [ProsedurTransaksiController::class, 'update_bank_masuk'])->middleware(['auth', 'role_user:3']);
+Route::delete('/spj/bukti_bank_masuk/{id}', [ProsedurTransaksiController::class, 'destroy_bank_masuk'])->middleware(['auth', 'role_user:3']);
 Route::get('/spj/bukti_bank_masuk/print', [ProsedurTransaksiController::class, 'print_bank_masuk'])->middleware(['auth', 'role_user:3']);
 
 Route::get('/spj/bukti_bank_keluar', [ProsedurTransaksiController::class, 'bukti_bank_keluar'])->middleware(['auth', 'role_user:3']);
 Route::post('/spj/bukti_bank_keluar', [ProsedurTransaksiController::class, 'store_bank_keluar'])->middleware(['auth', 'role_user:3']);
+Route::put('/spj/bukti_bank_keluar/{id}', [ProsedurTransaksiController::class, 'update_bank_keluar'])->middleware(['auth', 'role_user:3']);
+Route::delete('/spj/bukti_bank_keluar/{id}', [ProsedurTransaksiController::class, 'destroy_bank_keluar'])->middleware(['auth', 'role_user:3']);
 Route::get('/spj/bukti_bank_keluar/print', [ProsedurTransaksiController::class, 'print_bank_keluar'])->middleware(['auth', 'role_user:3']);
 
 // arsip pembukuan
 Route::get('/spj/arsip_pembukuan_1', [ArsipPembukuan1Controller::class, 'index'])->middleware(['auth', 'role_user:3']);
-Route::get('/spj/arsip_spj_pembukuan_1/rekap', [ArsipPembukuan1Controller::class, 'rekap'])->middleware(['auth', 'role_user:3']);
+Route::get('/spj/arsip_pembukuan_1/rekap', [ArsipPembukuan1Controller::class, 'print_rekap'])->middleware(['auth', 'role_user:3']);
+Route::delete('/spj/arsip_pembukuan_1/delete/{id}', [ArsipPembukuan1Controller::class, 'delete'])->middleware(['auth', 'role_user:3']);
+
 Route::get('/spj/arsip_pembukuan_2', [ArsipPembukuan2Controller::class, 'index'])->middleware(['auth', 'role_user:3']);
-Route::get('/spj/arsip_spj_pembukuan_2/rekap', [ArsipPembukuan2Controller::class, 'rekap'])->middleware(['auth', 'role_user:3']);
+Route::get('/spj/arsip_pembukuan_2/rekap', [ArsipPembukuan2Controller::class, 'print_rekap'])->middleware(['auth', 'role_user:3']);
+Route::delete('/spj/arsip_pembukuan_2/delete/{id}', [ArsipPembukuan2Controller::class, 'delete'])->middleware(['auth', 'role_user:3']);
+
 
 // arsip kegiatan
 Route::get('/spj/arsip_surat_masuk', [ArsipSuratMasukController::class, 'index'])->middleware(['auth','role_user:3']);

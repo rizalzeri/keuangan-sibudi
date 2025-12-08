@@ -27,7 +27,7 @@
                 <div class="col-auto">
                     <select id="filterType" class="form-select">
                         @foreach($types as $t)
-                            <option value="{{ $t }}">{{ $t }}</option>
+                            <option value="{{ $t }}" {{ $t == ($selectedType ?? 'Semua') ? 'selected' : '' }}>{{ $t }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -41,7 +41,7 @@
         <div class="card-body">
 
             <div class="table-responsive">
-                <table class="table datatable">
+                <table id="arsipTable" class="table datatable">
                     <thead class="table-light">
                         <tr>
                             <th style="width:60px">No</th>
@@ -61,9 +61,9 @@
                                 <td>{{ $r['jenis'] }}</td>
                                 <td>{{ $r['bukti'] }}</td>
                                 <td class="text-center">
-                                    <button class="btn btn-sm btn-info btn-view" title="Lihat"><i class="bi bi-eye"></i></button>
-                                    <button class="btn btn-sm btn-warning btn-edit" title="Edit"><i class="bi bi-pencil"></i></button>
-                                    <button class="btn btn-sm btn-danger btn-delete" title="Hapus"><i class="bi bi-trash"></i></button>
+                                    <button class="btn btn-sm btn-info btn-view" title="Lihat" data-id="{{ $r['id'] }}"><i class="bi bi-eye"></i></button>
+                                    <button class="btn btn-sm btn-warning btn-edit" title="Edit" data-id="{{ $r['id'] }}"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-sm btn-danger btn-delete" title="Hapus" data-id="{{ $r['id'] }}"><i class="bi bi-trash"></i></button>
                                 </td>
                             </tr>
                         @endforeach
@@ -79,69 +79,128 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalView" tabindex="-1" aria-labelledby="modalViewLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalViewLabel">Detail Transaksi</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <table class="table table-bordered">
+              <tbody>
+                  <tr><th>Transaksi</th><td id="viewTransaksi"></td></tr>
+                  <tr><th>Nomor Dokumen</th><td id="viewNomor"></td></tr>
+                  <tr><th>Jenis SPJ</th><td id="viewJenis"></td></tr>
+                  <tr><th>Bukti Dukung</th><td id="viewBukti"></td></tr>
+              </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+</div>
 <!-- DataTables & jQuery (CDN), asumsi layout belum memuat mereka -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const table = $('#arsipTable').DataTable({
-        paging: true,
-        ordering: true,
-        info: true,
-        searching: true,
-        lengthChange: true
+    // inisialisasi DataTable
+
+
+    // ketika filter berubah -> reload page server-side dengan query params (untuk nomor urut per tahun yang benar)
+    $('#filterType, #filterYear').on('change', function () {
+        const qYear = $('#filterYear').val();
+        const qType = $('#filterType').val();
+        const url = new URL(window.location.href);
+        url.searchParams.set('year', qYear);
+        url.searchParams.set('type', qType);
+        window.location.href = url.toString();
     });
 
-    // custom filtering: filter by jenis column using dropdown
-    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-        // hanya aktif untuk tabel kita
-        if (settings.nTable.id !== 'arsipTable') return true;
-
-        const selectedType = $('#filterType').val();
-        const rowJenis = $('tr', settings.nTable.tBodies[0]).eq(dataIndex).attr('data-jenis') || data[3];
-
-        if (!selectedType || selectedType === 'Semua') return true;
-        return rowJenis === selectedType;
-    });
-
-    // ketika filter berubah -> redraw
-    $('#filterType').on('change', function () {
-        table.draw();
-    });
-
-    // tahun filter — demo: tidak memfilter server-side karena sample, tapi kita keep it for query to rekap
-    $('#filterYear').on('change', function () {
-        // if you want year filter client-side, implement here using a data attribute in rows (not present in demo)
-    });
-
-    // action buttons (demo)
+    // action buttons (placeholder — Anda bisa sambungkan ke route edit/delete sesuai jenis)
     $('#arsipTable tbody').on('click', '.btn-view', function () {
         const $tr = $(this).closest('tr');
-        alert('Lihat: ' + $tr.find('td').eq(1).text());
+        const id = $(this).data('id');
+
+        const transaksi = $tr.find('td').eq(1).text();
+        const nomor = $tr.find('td').eq(2).text();
+        const jenis = $tr.find('td').eq(3).text();
+        const bukti = $tr.find('td').eq(4).text();
+
+        $('#viewTransaksi').text(transaksi);
+        $('#viewNomor').text(nomor);
+        $('#viewJenis').text(jenis);
+        $('#viewBukti').text(bukti);
+        $('#modalView').modal('show');
     });
 
     $('#arsipTable tbody').on('click', '.btn-edit', function () {
         const $tr = $(this).closest('tr');
-        alert('Edit: ' + $tr.find('td').eq(1).text());
+        const id = $(this).data('id');
+        alert('Edit: ' + $tr.find('td').eq(1).text() + '\nID: ' + id);
     });
 
     $('#arsipTable tbody').on('click', '.btn-delete', function () {
-        if (!confirm('Hapus baris ini?')) return;
-        const row = table.row($(this).closest('tr'));
-        row.remove().draw();
+        const $tr = $(this).closest('tr');
+        const id = $(this).data('id');
+        const jenis = $tr.find('td').eq(3).text();
+
+        Swal.fire({
+            title: 'Hapus Data?',
+            text: "Anda yakin ingin menghapus data ini?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Hapus',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // panggil route delete via AJAX
+                $.ajax({
+                    url: "{{ url('/spj/arsip_pembukuan_1/delete') }}/" + id,
+                    type: 'DELETE',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        jenis: jenis
+                    },
+                    success: function(res) {
+                        if(res.success){
+                            Swal.fire({
+                                title: 'Terhapus!',
+                                text: res.message,
+                                icon: 'success',
+                                timer: 3000,       // reload otomatis setelah 3 detik
+                                timerProgressBar: true,
+                                showConfirmButton: true
+                            }).then((result) => {
+                                // reload saat user klik OK
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Gagal!', res.message, 'error');
+                        }
+                    },
+                    error: function() {
+                        Swal.fire('Gagal!', 'Terjadi kesalahan server', 'error');
+                    }
+                });
+            }
+        });
     });
 
-    // Cetak Rekap: ambil filter dan tahun, buka tab baru ke route rekap
-    function openRekap() {
+    // Cetak Rekap (buka tab baru — implement sesuai route rekap di server)
+    $('#btnRekap, #btnRekapBottom').on('click', function () {
         const year = $('#filterYear').val();
-        const filter = $('#filterType').val();
-
-        window.open('_blank');
-    }
-
-    $('#btnRekap, #btnRekapBottom').on('click', openRekap);
+        const type = $('#filterType').val();
+        const url = "{{ url('/spj/arsip_pembukuan_1/rekap') }}?year=" + encodeURIComponent(year) + "&type=" + encodeURIComponent(type);
+        window.open(url, '_blank');
+    });
 });
 </script>
 @endsection
