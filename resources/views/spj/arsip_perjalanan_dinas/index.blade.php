@@ -37,6 +37,13 @@
                                 <td class="pd-transport">{{ $it->transport ?? '-' }}</td>
                                 <td class="">
                                     <span class="pd-gdrive d-none">{{ $it->link_gdrive }}</span>
+                                    <a href="{{ asset('assets/word/FORM SURAT PERINTAH PERJALANAN TUGAS.docx') }}"
+                                        class="btn btn-sm btn-success"
+                                        download
+                                        title="Download Template">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+
                                     <button class="btn btn-sm btn-info btn-view" data-id="{{ $it->id }}" title="Lihat"><i class="bi bi-eye"></i></button>
                                     <button class="btn btn-sm btn-warning btn-edit" data-id="{{ $it->id }}" title="Edit"><i class="bi bi-pencil"></i></button>
                                     <button class="btn btn-sm btn-danger btn-delete" data-id="{{ $it->id }}" title="Hapus"><i class="bi bi-trash"></i></button>

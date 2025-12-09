@@ -56,7 +56,7 @@ use App\Http\Controllers\ArsipPerjalananDinasController;
 use App\Http\Controllers\ArsipNotulenRapatController;
 use App\Http\Controllers\ArsipDokumentasiFotoController;
 use App\Http\Controllers\ArsipDokumentasiVideoController;
-use App\Http\Controllers\ArsipDokumentasiBerkasController;
+use App\Http\Controllers\ArsipDokumentasiBerkasDokumenController;
 use Illuminate\Support\Facades\Http;
 
 /*
@@ -554,10 +554,20 @@ Route::get('/spj/arsip_notulen_rapat', [ArsipNotulenRapatController::class, 'ind
 Route::post('/spj/arsip_notulen_rapat', [ArsipNotulenRapatController::class, 'store'])->middleware(['auth','role_user:3']);
 Route::put('/spj/arsip_notulen_rapat/{id}', [ArsipNotulenRapatController::class, 'update'])->middleware(['auth','role_user:3']);
 Route::delete('/spj/arsip_notulen_rapat/{id}', [ArsipNotulenRapatController::class, 'destroy'])->middleware(['auth','role_user:3']);
+Route::get('/spj/arsip_notulen_rapat/{id}/cetak',[ArsipNotulenRapatController::class, 'cetak'])->middleware(['auth','role_user:3']);
 
 // arsip dokumentasi
-Route::get('/spj/arsip_dokumentasi_foto',[ArsipDokumentasiFotoController::class, 'index'])->middleware(['auth','role_user:3']);
+Route::get('/spj/arsip_dokumentasi_foto', [ArsipDokumentasiFotoController::class, 'index'])->middleware(['auth','role_user:3']);
+Route::post('/spj/arsip_dokumentasi_foto', [ArsipDokumentasiFotoController::class, 'store'])->middleware(['auth','role_user:3']);
+Route::put('/spj/arsip_dokumentasi_foto/{id}', [ArsipDokumentasiFotoController::class, 'update'])->middleware(['auth','role_user:3']);
+Route::delete('/spj/arsip_dokumentasi_foto/{id}', [ArsipDokumentasiFotoController::class, 'destroy'])->middleware(['auth','role_user:3']);
 
 Route::get('/spj/arsip_dokumentasi_video', [ArsipDokumentasiVideoController::class, 'index'])->middleware(['auth','role_user:3']);
+Route::post('/spj/arsip_dokumentasi_video', [ArsipDokumentasiVideoController::class, 'store'])->middleware(['auth','role_user:3']);
+Route::put('/spj/arsip_dokumentasi_video/{id}', [ArsipDokumentasiVideoController::class, 'update'])->middleware(['auth','role_user:3']);
+Route::delete('/spj/arsip_dokumentasi_video/{id}', [ArsipDokumentasiVideoController::class, 'destroy'])->middleware(['auth','role_user:3']);
 
-Route::get('/spj/arsip_dokumentasi_berkas', [ArsipDokumentasiBerkasController::class, 'index'])->middleware(['auth','role_user:3']);
+Route::get('/spj/arsip_dokumentasi_berkas_dokumen', [ArsipDokumentasiBerkasDokumenController::class,'index'])->middleware(['auth','role_user:3']);
+Route::post('/spj/arsip_dokumentasi_berkas_dokumen', [ArsipDokumentasiBerkasDokumenController::class,'store'])->middleware(['auth','role_user:3']);
+Route::put('/spj/arsip_dokumentasi_berkas_dokumen/{id}', [ArsipDokumentasiBerkasDokumenController::class,'update'])->middleware(['auth','role_user:3']);
+Route::delete('/spj/arsip_dokumentasi_berkas_dokumen/{id}', [ArsipDokumentasiBerkasDokumenController::class,'destroy'])->middleware(['auth','role_user:3']);

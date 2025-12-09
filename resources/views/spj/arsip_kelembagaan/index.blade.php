@@ -283,7 +283,7 @@ $(function () {
 
         Swal.fire({
             title: 'Hapus data?',
-            text: 'Data akan dihapus permanen.',
+            text: 'Data akan dihapus.',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Ya, hapus',

@@ -58,6 +58,13 @@ function format_date_id($iso){
 
                                 <td class="text-center">
                                     <span class="nr-gdrive d-none">{{ $n->link_gdrive }}</span>
+                                    <a href="/spj/arsip_notulen_rapat/{{ $n->id }}/cetak"
+                                        class="btn btn-sm btn-success btn-cetak"
+                                        data-id="{{ $n->id }}"
+                                        title="Cetak PDF"
+                                        target="_blank">
+                                         <i class="bi bi-printer"></i>
+                                     </a>
                                     <button class="btn btn-sm btn-info btn-view" data-id="{{ $n->id }}" title="Lihat"><i class="bi bi-eye"></i></button>
                                     <button class="btn btn-sm btn-warning btn-edit" data-id="{{ $n->id }}" title="Edit"><i class="bi bi-pencil"></i></button>
                                     <button class="btn btn-sm btn-danger btn-delete" data-id="{{ $n->id }}" title="Hapus"><i class="bi bi-trash"></i></button>
@@ -100,15 +107,17 @@ $(function () {
 
     // reset modal ketika ditutup
     $('#formModalNotulen').on('hidden.bs.modal', function () {
-        $form[0].reset();
+        // reset method & action
         $form.find('input[name="_method"]').val('POST');
         $form.attr('action', createAction);
-        $('#rowIndexNotulen').val('');
+
+        // reset label
         $('#formModalLabelNotulen').text('Tambah Notulen Rapat');
 
-        // default tanggal hari ini
-        $('#tanggalNotulen').val(new Date().toISOString().split('T')[0]);
+        // reset form, tapi JANGAN override tanggal otomatis
+        $form.trigger('reset');
     });
+
 
     // set default date once
     $('#tanggalNotulen').val(new Date().toISOString().split('T')[0]);
@@ -269,7 +278,21 @@ $(function () {
         });
     });
 
-    // helpers
+    const baseUrl = window.location.origin;
+
+    // Event untuk cetak PDF
+    $tbody.on('click', '.btn-cetak', function (e) {
+        const id = $(this).data('id');
+        if (!id) {
+            Swal.fire('Error', 'ID tidak ditemukan untuk cetak', 'error');
+            return;
+        }
+
+        // Buka PDF di tab baru
+        window.open(`${baseUrl}/spj/arsip_notulen_rapat/${id}/cetak`, '_blank');
+    });
+
+    // Juga update fungsi appendRow dan updateRow untuk menambahkan button cetak:
     function appendRow(d) {
         const newIndex = $tbody.find('tr').length + 1;
         const formatted = (d.tanggal_notulen_rapat) ? formatDateID(d.tanggal_notulen_rapat) : '';
@@ -284,6 +307,13 @@ $(function () {
         $tr.append(`
             <td class="text-center">
                 <span class="nr-gdrive d-none">${escapeHtml(d.link_gdrive || '')}</span>
+                <a href="${baseUrl}/spj/arsip_notulen_rapat/${d.id}/cetak"
+                class="btn btn-sm btn-success btn-cetak"
+                data-id="${d.id}"
+                title="Cetak PDF"
+                target="_blank">
+                    <i class="bi bi-printer"></i>
+                </a>
                 <button class="btn btn-sm btn-info btn-view" title="Lihat"><i class="bi bi-eye"></i></button>
                 <button class="btn btn-sm btn-warning btn-edit" data-id="${d.id}" title="Edit"><i class="bi bi-pencil"></i></button>
                 <button class="btn btn-sm btn-danger btn-delete" data-id="${d.id}" title="Hapus"><i class="bi bi-trash"></i></button>

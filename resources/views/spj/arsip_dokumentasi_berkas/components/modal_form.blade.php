@@ -1,43 +1,39 @@
-<div class="modal fade" id="formModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
+<!-- Modal Form Berkas Dokumen -->
+<div class="modal fade" id="formBerkasModal" tabindex="-1" aria-labelledby="formBerkasLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <form id="berkasForm" action="{{ url('/spj/arsip_dokumentasi_berkas_dokumen') }}" method="POST" class="modal-content">
+            @csrf
+            <input type="hidden" name="_method" value="POST">
+            <input type="hidden" id="rowIndexBerkas" value="">
 
-            <form id="berkasForm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="formBerkasLabel">Tambah Berkas Dokumen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
 
-                <div class="modal-header">
-                    <h5 class="modal-title" id="formModalLabel">Tambah Dokumentasi Berkas</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-
-                <div class="modal-body">
-
-                    <input type="hidden" id="rowIndex">
-
-                    <div class="mb-3">
-                        <label class="form-label">Tahun</label>
-                        <select class="form-select" id="tahun" required></select>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="berkasTanggal" class="form-label">Tanggal (untuk penyimpanan)</label>
+                        <input type="date" id="berkasTanggal" name="tanggal_berkas_dokumen" class="form-control" required>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Nama Dokumen</label>
-                        <input type="text" class="form-control" id="nama" required>
+                    <div class="col-12">
+                        <label for="berkasNama" class="form-label">Nama Dokumen</label>
+                        <input type="text" id="berkasNama" name="nama_dokumen" class="form-control" placeholder="Nama Dokumen">
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Link Google Drive</label>
-                        <input type="text" class="form-control" id="gdrive" placeholder="https://">
+                    <div class="col-12">
+                        <label for="berkasGdrive" class="form-label">Link GDrive (opsional)</label>
+                        <input type="text" id="berkasGdrive" name="link_gdrive" class="form-control" placeholder="https://drive.google.com/...">
                     </div>
-
                 </div>
+            </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary"
-                        data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">Simpan</button>
-                </div>
-
-            </form>
-
-        </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan</button>
+            </div>
+        </form>
     </div>
 </div>

@@ -133,13 +133,13 @@
                     </a>
                 </li>
                 <li>
-                    <a href="/spj/arsip_dokumentasi_berkas" class="{{ Request::is('/spj/arsip_dokumentasi_berkas*') ? 'active' : '' }}">
+                    <a href="/spj/arsip_dokumentasi_berkas_dokumen" class="{{ Request::is('/spj/arsip_dokumentasi_berkas_dokumen*') ? 'active' : '' }}">
                         <i class="bi bi-circle"></i><span>Berkas Dokumen</span>
                     </a>
                 </li>
             </ul>
-        </li><!-- End Dokumentasi Nav -->
+        </li>
 
     </ul>
 
-</aside><!-- End Sidebar-->
+</aside>

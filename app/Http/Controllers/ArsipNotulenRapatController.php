@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\ArsipNotulenRapat;
-
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 class ArsipNotulenRapatController extends Controller
 {
     public function index()
@@ -86,5 +87,31 @@ class ArsipNotulenRapatController extends Controller
         }
 
         return back()->with('success', 'Notulen berhasil dihapus!');
+    }
+    public function cetak($id)
+    {
+        // Ambil data notulen berdasarkan ID
+        $notulen = ArsipNotulenRapat::findOrFail($id);
+
+        // Format tanggal dalam bahasa Indonesia
+        $hari = Carbon::parse($notulen->tanggal_notulen_rapat)->locale('id')->isoFormat('dddd');
+        $tanggal = Carbon::parse($notulen->tanggal_notulen_rapat)->format('d/m/Y');
+
+        // Data untuk PDF
+        $data = [
+            'hari' => ucfirst($hari),
+            'tanggal' => $tanggal,
+            'waktu' => $notulen->waktu ?? '-',
+            'tempat' => $notulen->tempat ?? '-',
+            'acara' => $notulen->agenda ?? '-',
+            // Anda bisa menambahkan data peserta jika ada
+            'peserta' => [], // Kosongkan jika tidak ada data peserta
+        ];
+
+        // Generate PDF
+        $pdf = PDF::loadView('spj.arsip_notulen_rapat.cetak_pdf', $data);
+
+        // Download PDF
+        return $pdf->download('notulen-rapat-' . $notulen->id . '.pdf');
     }
 }
