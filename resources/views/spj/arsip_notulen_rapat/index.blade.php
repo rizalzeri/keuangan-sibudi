@@ -1,6 +1,23 @@
 @extends('layouts.spj.main')
 
 @section('container')
+@php use Illuminate\Support\Str; use Carbon\Carbon; @endphp
+
+@php
+// helper kecil untuk format tanggal ke format Indonesia with day name (Senin, dd/mm/YYYY)
+function format_date_id($iso){
+    if (!$iso) return '-';
+    $days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    try {
+        $c = \Carbon\Carbon::parse($iso);
+        $day = $days[(int)$c->format('w')];
+        return $day . ',' . $c->format('d/m/Y');
+    } catch (\Exception $e) {
+        return $iso;
+    }
+}
+@endphp
+
 <div class="container-fluid">
     <div class="d-flex align-items-center justify-content-between mb-3">
         <h4 class="mb-0">Arsip Notulen Rapat</h4>
@@ -25,47 +42,28 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @php
-                            $notulens = [
-                                ['tanggal'=>date('Y-m-d'),'waktu'=>'10:00','tempat'=>'Balai Desa','agenda'=>'Rapat RW','penyelenggara'=>'Ketua RW','gdrive'=>'https://drive.google.com/file/d/xxx'],
-                                ['tanggal'=>date('Y-m-d', strtotime('-2 days')),'waktu'=>'14:00','tempat'=>'Kantor Desa','agenda'=>'Koordinasi Program','penyelenggara'=>'Sekdes','gdrive'=>''],
-                            ];
-
-                            // fungsi bantu format tanggal php (dipakai hanya untuk initial dummy)
-                            function format_date_id($d){
-                                $days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-                                $ts = strtotime($d);
-                                $day = $days[date('w', $ts)];
-                                return $day . ',' . date('d/m/Y', $ts);
-                            }
-                        @endphp
-
-                        @foreach ($notulens as $i => $n)
-                            <tr data-index="{{ $i }}">
+                        @foreach($items as $i => $n)
+                            <tr data-id="{{ $n->id }}">
                                 <td class="text-center">{{ $i + 1 }}</td>
 
-                                {{-- visible formatted date --}}
-                                <td class="nr-date">{{ format_date_id($n['tanggal']) }}</td>
+                                <td class="nr-date">
+                                    <span class="nr-date-visible">{{ format_date_id($n->tanggal_notulen_rapat) }}</span>
+                                    <span class="nr-date-raw d-none">{{ $n->tanggal_notulen_rapat ? $n->tanggal_notulen_rapat->format('Y-m-d') : '' }}</span>
+                                </td>
 
-                                {{-- store raw date hidden for editing --}}
-                                <td class="nr-date-raw d-none">{{ $n['tanggal'] }}</td>
-
-                                <td class="nr-waktu">{{ $n['waktu'] }}</td>
-                                <td class="nr-tempat">{{ $n['tempat'] }}</td>
-                                <td class="nr-agenda">{{ $n['agenda'] }}</td>
-                                <td class="nr-penyelenggara">{{ $n['penyelenggara'] }}</td>
-
-                                {{-- gdrive tersembunyi --}}
-                                <td class="nr-gdrive d-none">{{ $n['gdrive'] }}</td>
+                                <td class="nr-waktu">{{ $n->waktu ?? '-' }}</td>
+                                <td class="nr-tempat">{{ $n->tempat ?? '-' }}</td>
+                                <td class="nr-agenda">{{ $n->agenda ?? '-' }}</td>
+                                <td class="nr-penyelenggara">{{ $n->penyelenggara ?? '-' }}</td>
 
                                 <td class="text-center">
-                                    <button class="btn btn-sm btn-info btn-view" title="Lihat"><i class="bi bi-eye"></i></button>
-                                    <button class="btn btn-sm btn-warning btn-edit" title="Edit"><i class="bi bi-pencil"></i></button>
-                                    <button class="btn btn-sm btn-danger btn-delete" title="Hapus"><i class="bi bi-trash"></i></button>
+                                    <span class="nr-gdrive d-none">{{ $n->link_gdrive }}</span>
+                                    <button class="btn btn-sm btn-info btn-view" data-id="{{ $n->id }}" title="Lihat"><i class="bi bi-eye"></i></button>
+                                    <button class="btn btn-sm btn-warning btn-edit" data-id="{{ $n->id }}" title="Edit"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-sm btn-danger btn-delete" data-id="{{ $n->id }}" title="Hapus"><i class="bi bi-trash"></i></button>
                                 </td>
                             </tr>
                         @endforeach
-
                     </tbody>
                 </table>
             </div>
@@ -76,16 +74,21 @@
 @include('spj.arsip_notulen_rapat.components.modal_form')
 @include('spj.arsip_notulen_rapat.components.modal_view')
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
 $(function () {
-    const $tbody = $('#tblNotulen tbody');
+    $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
 
-    // helper: format YYYY-MM-DD -> "NamaHari,DD/MM/YYYY" (Indonesia)
+    const $tbody = $('#tblNotulen tbody');
+    const $form = $('#notulenForm');
+    const createAction = $form.attr('action');
+
+    // helper format tanggal JS same as earlier (optional)
     function formatDateID(iso) {
         if (!iso) return '';
         const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-        // parse
-        const parts = iso.split('-'); // YYYY-MM-DD
+        const parts = iso.split('-');
         if (parts.length !== 3) return iso;
         const y = parseInt(parts[0],10), m = parseInt(parts[1],10)-1, d = parseInt(parts[2],10);
         const dt = new Date(y,m,d);
@@ -95,126 +98,233 @@ $(function () {
         return `${dayName},${dd}/${mm}/${y}`;
     }
 
-    // reset modal tiap ditutup
+    // reset modal ketika ditutup
     $('#formModalNotulen').on('hidden.bs.modal', function () {
-        $('#notulenForm')[0].reset();
+        $form[0].reset();
+        $form.find('input[name="_method"]').val('POST');
+        $form.attr('action', createAction);
         $('#rowIndexNotulen').val('');
         $('#formModalLabelNotulen').text('Tambah Notulen Rapat');
 
-        // set default date hari ini (YYYY-MM-DD)
-        const today = new Date().toISOString().split('T')[0];
-        $('#tanggalNotulen').val(today);
+        // default tanggal hari ini
+        $('#tanggalNotulen').val(new Date().toISOString().split('T')[0]);
     });
 
-    // set default date on open first time
+    // set default date once
     $('#tanggalNotulen').val(new Date().toISOString().split('T')[0]);
 
-    // submit add/edit (client-side demo)
-    $('#notulenForm').on('submit', function (e) {
+    // submit AJAX (create/update)
+    $form.on('submit', function (e) {
         e.preventDefault();
+        const url = $form.attr('action');
+        const methodOverride = ($form.find('input[name="_method"]').val() || 'POST').toUpperCase();
+        const httpMethod = methodOverride === 'POST' ? 'POST' : methodOverride;
 
-        const tanggal = $('#tanggalNotulen').val(); // raw YYYY-MM-DD
-        const waktu = $('#waktuNotulen').val().trim() || '-';
-        const tempat = $('#tempatNotulen').val().trim() || '-';
-        const agenda = $('#agendaNotulen').val().trim() || '-';
-        const penyelenggara = $('#penyelenggaraNotulen').val().trim() || '-';
-        const gdrive = $('#gdriveNotulen').val().trim();
+        const payload = {
+            tanggal_notulen_rapat: $('#tanggalNotulen').val().trim(),
+            waktu: $('#waktuNotulen').val().trim(),
+            tempat: $('#tempatNotulen').val().trim(),
+            agenda: $('#agendaNotulen').val().trim(),
+            penyelenggara: $('#penyelenggaraNotulen').val().trim(),
+            link_gdrive: $('#gdriveNotulen').val().trim(),
+            _token: $('meta[name="csrf-token"]').attr('content'),
+            _method: methodOverride
+        };
 
-        if (!tanggal) {
-            alert('Tanggal wajib diisi');
+        if (!payload.tanggal_notulen_rapat) {
+            Swal.fire('Kesalahan', 'Tanggal wajib diisi', 'error');
             return;
         }
 
-        const idx = $('#rowIndexNotulen').val();
-        const formatted = formatDateID(tanggal);
+        $.ajax({
+            url: url,
+            method: httpMethod,
+            data: payload,
+            success: function (res) {
+                if (res.success) {
+                    if (httpMethod === 'POST') appendRow(res.data);
+                    else updateRow(res.data);
 
-        if (idx === '') {
-            // tambah
-            const newIndex = $tbody.find('tr').length + 1;
-            const $tr = $('<tr>');
-            $tr.append(`<td class="text-center">${newIndex}</td>`);
-            $tr.append(`<td class="nr-date">${formatted}</td>`);
-            $tr.append(`<td class="nr-date-raw d-none">${tanggal}</td>`);
-            $tr.append(`<td class="nr-waktu">${escapeHtml(waktu)}</td>`);
-            $tr.append(`<td class="nr-tempat">${escapeHtml(tempat)}</td>`);
-            $tr.append(`<td class="nr-agenda">${escapeHtml(agenda)}</td>`);
-            $tr.append(`<td class="nr-penyelenggara">${escapeHtml(penyelenggara)}</td>`);
-            $tr.append(`<td class="nr-gdrive d-none">${escapeHtml(gdrive)}</td>`);
-            $tr.append(`<td class="text-center">
-                            <button class="btn btn-sm btn-info btn-view" title="Lihat"><i class="bi bi-eye"></i></button>
-                            <button class="btn btn-sm btn-warning btn-edit" title="Edit"><i class="bi bi-pencil"></i></button>
-                            <button class="btn btn-sm btn-danger btn-delete" title="Hapus"><i class="bi bi-trash"></i></button>
-                        </td>`);
-            $tbody.append($tr);
-        } else {
-            // edit
-            const $tr = $tbody.find('tr').eq(parseInt(idx));
-            $tr.find('.nr-date').text(formatted);
-            $tr.find('.nr-date-raw').text(tanggal);
-            $tr.find('.nr-waktu').text(waktu);
-            $tr.find('.nr-tempat').text(tempat);
-            $tr.find('.nr-agenda').text(agenda);
-            $tr.find('.nr-penyelenggara').text(penyelenggara);
-            $tr.find('.nr-gdrive').text(gdrive);
-        }
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('formModalNotulen'));
+                    if (modal) modal.hide();
 
-        // tutup modal
-        bootstrap.Modal.getInstance(document.getElementById('formModalNotulen')).hide();
+                    Swal.fire({ icon:'success', title:'Berhasil', text: res.message || 'Sukses', timer:900, showConfirmButton:false })
+                        .then(() => location.reload());
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    Swal.fire('Error', res.message || 'Terjadi kesalahan', 'error');
+                }
+            },
+            error: function (xhr) {
+                if (xhr.status === 422) {
+                    const errors = xhr.responseJSON.errors || {};
+                    const messages = Object.values(errors).flat().join('<br>');
+                    Swal.fire({ icon: 'error', title: 'Validasi', html: messages });
+                } else {
+                    const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Terjadi kesalahan pada server';
+                    Swal.fire('Error', msg, 'error');
+                }
+            }
+        });
     });
 
-    // view
+    // VIEW (using td.eq)
     $tbody.on('click', '.btn-view', function () {
         const $tr = $(this).closest('tr');
-        $('#viewTanggalNotulen').text($tr.find('.nr-date').text());
-        $('#viewWaktuNotulen').text($tr.find('.nr-waktu').text());
-        $('#viewTempatNotulen').text($tr.find('.nr-tempat').text());
-        $('#viewAgendaNotulen').text($tr.find('.nr-agenda').text());
-        $('#viewPenyelenggaraNotulen').text($tr.find('.nr-penyelenggara').text());
-        // NOTE: link GDrive tidak ditampilkan di view
+        const tds = $tr.find('td');
+
+        const tanggalVisible = tds.eq(1).find('.nr-date-visible').text().trim() || '-';
+        const waktu = tds.eq(2).text().trim() || '-';
+        const tempat = tds.eq(3).text().trim() || '-';
+        const agendaHtml = tds.eq(4).html().trim() || '-';
+        const penyelenggara = tds.eq(5).text().trim() || '-';
+        const gdrive = tds.eq(6).find('.nr-gdrive').text().trim() || '';
+
+        $('#viewTanggalNotulen').text(tanggalVisible);
+        $('#viewWaktuNotulen').text(waktu);
+        $('#viewTempatNotulen').text(tempat);
+        $('#viewAgendaNotulen').html(agendaHtml === '' ? '-' : agendaHtml);
+        $('#viewPenyelenggaraNotulen').text(penyelenggara);
+
+        if (gdrive) {
+            $('#viewGdriveNotulen').attr('href', gdrive).text('Buka GDrive').removeClass('text-muted');
+        } else {
+            $('#viewGdriveNotulen').attr('href', '#').text('Tidak ada link').addClass('text-muted');
+        }
 
         new bootstrap.Modal(document.getElementById('viewModalNotulen')).show();
     });
 
-    // edit
+    // EDIT (using td.eq; raw date stored inside date cell)
     $tbody.on('click', '.btn-edit', function () {
         const $tr = $(this).closest('tr');
-        const idx = $tr.index();
-        $('#rowIndexNotulen').val(idx);
+        const tds = $tr.find('td');
+        const id = $(this).data('id');
 
-        // isi form dari row; raw date ada di sel tersembunyi
-        const rawDate = $tr.find('.nr-date-raw').text().trim() || new Date().toISOString().split('T')[0];
+        if (!id) {
+            Swal.fire('Error', 'ID tidak ditemukan untuk edit', 'error');
+            return;
+        }
+
+        $form.attr('action', '/spj/arsip_notulen_rapat/' + id);
+        $form.find('input[name="_method"]').val('PUT');
+
+        const rawDate = tds.eq(1).find('.nr-date-raw').text().trim() || new Date().toISOString().split('T')[0];
+        const waktu = tds.eq(2).text().trim() || '';
+        const tempat = tds.eq(3).text().trim() || '';
+        const agenda = tds.eq(4).text().trim() || '';
+        const penyelenggara = tds.eq(5).text().trim() || '';
+        const gdrive = tds.eq(6).find('.nr-gdrive').text().trim() || '';
+
         $('#tanggalNotulen').val(rawDate);
-        $('#waktuNotulen').val($tr.find('.nr-waktu').text().trim());
-        $('#tempatNotulen').val($tr.find('.nr-tempat').text().trim());
-        $('#agendaNotulen').val($tr.find('.nr-agenda').text().trim());
-        $('#penyelenggaraNotulen').val($tr.find('.nr-penyelenggara').text().trim());
-
-        // ambil gdrive dari sel tersembunyi (jika ada)
-        $('#gdriveNotulen').val($tr.find('.nr-gdrive').text().trim() || '');
+        $('#waktuNotulen').val(waktu);
+        $('#tempatNotulen').val(tempat);
+        $('#agendaNotulen').val(agenda);
+        $('#penyelenggaraNotulen').val(penyelenggara);
+        $('#gdriveNotulen').val(gdrive);
 
         $('#formModalLabelNotulen').text('Edit Notulen Rapat');
         new bootstrap.Modal(document.getElementById('formModalNotulen')).show();
     });
 
-    // delete
+    // DELETE
     $tbody.on('click', '.btn-delete', function () {
-        if (!confirm('Hapus data ini?')) return;
-        $(this).closest('tr').remove();
+        const $tr = $(this).closest('tr');
+        const id = $(this).data('id');
+        if (!id) {
+            Swal.fire('Error', 'ID tidak ditemukan untuk menghapus', 'error');
+            return;
+        }
 
-        // perbaiki nomor urut
-        $tbody.find('tr').each(function (i) {
-            $(this).find('td:first').text(i + 1);
+        Swal.fire({
+            title: 'Hapus data?',
+            html: `<small>Data akan dihapus.</small>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, hapus',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '/spj/arsip_notulen_rapat/' + id,
+                    method: 'DELETE',
+                    data: { _token: $('meta[name="csrf-token"]').attr('content') },
+                    success: function (res) {
+                        if (res.success) {
+                            $tr.remove();
+                            reindexRows();
+                            Swal.fire({ icon:'success', title:'Terhapus', text: res.message || 'Data dihapus', timer:800, showConfirmButton:false })
+                                .then(() => location.reload());
+                            setTimeout(() => location.reload(), 1200);
+                        } else {
+                            Swal.fire('Error', res.message || 'Gagal menghapus', 'error');
+                        }
+                    },
+                    error: function (xhr) {
+                        const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Terjadi kesalahan pada server';
+                        Swal.fire('Error', msg, 'error');
+                    }
+                });
+            }
         });
     });
 
-    // utility: escape html
+    // helpers
+    function appendRow(d) {
+        const newIndex = $tbody.find('tr').length + 1;
+        const formatted = (d.tanggal_notulen_rapat) ? formatDateID(d.tanggal_notulen_rapat) : '';
+        const $tr = $('<tr>').attr('data-id', d.id);
+
+        $tr.append(`<td class="text-center">${newIndex}</td>`);
+        $tr.append(`<td class="nr-date"><span class="nr-date-visible">${escapeHtml(formatted)}</span><span class="nr-date-raw d-none">${escapeHtml(d.tanggal_notulen_rapat || '')}</span></td>`);
+        $tr.append(`<td class="nr-waktu">${escapeHtml(d.waktu || '-')}</td>`);
+        $tr.append(`<td class="nr-tempat">${escapeHtml(d.tempat || '-')}</td>`);
+        $tr.append(`<td class="nr-agenda">${escapeHtml(d.agenda || '-')}</td>`);
+        $tr.append(`<td class="nr-penyelenggara">${escapeHtml(d.penyelenggara || '-')}</td>`);
+        $tr.append(`
+            <td class="text-center">
+                <span class="nr-gdrive d-none">${escapeHtml(d.link_gdrive || '')}</span>
+                <button class="btn btn-sm btn-info btn-view" title="Lihat"><i class="bi bi-eye"></i></button>
+                <button class="btn btn-sm btn-warning btn-edit" data-id="${d.id}" title="Edit"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-danger btn-delete" data-id="${d.id}" title="Hapus"><i class="bi bi-trash"></i></button>
+            </td>
+        `);
+
+        $tbody.append($tr);
+    }
+
+    function updateRow(d) {
+        const $tr = $tbody.find('tr[data-id="' + d.id + '"]');
+        if (!$tr.length) return;
+
+        $tr.find('td').eq(1).find('.nr-date-visible').text(d.tanggal_notulen_rapat ? formatDateID(d.tanggal_notulen_rapat) : '-');
+        $tr.find('td').eq(1).find('.nr-date-raw').text(d.tanggal_notulen_rapat || '');
+        $tr.find('td').eq(2).text(d.waktu || '-');
+        $tr.find('td').eq(3).text(d.tempat || '-');
+        $tr.find('td').eq(4).text(d.agenda || '-');
+        $tr.find('td').eq(5).text(d.penyelenggara || '-');
+        $tr.find('.nr-gdrive').text(d.link_gdrive || '');
+    }
+
+    function reindexRows() {
+        $tbody.find('tr').each(function (i) {
+            $(this).find('td:first').text(i + 1);
+        });
+    }
+
     function escapeHtml(unsafe) {
         return (unsafe || '')
+            .toString()
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    // optional: init datatable if available
+    if ($.fn.DataTable) {
+        try { $('#tblNotulen').DataTable(); } catch (e) { console.warn('DataTable init failed', e); }
     }
 });
 </script>

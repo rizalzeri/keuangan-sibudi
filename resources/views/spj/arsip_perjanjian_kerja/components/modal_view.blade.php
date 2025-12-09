@@ -1,30 +1,33 @@
 <!-- Modal View Perjanjian Kerja -->
-<div class="modal fade" id="viewModalPerj" tabindex="-1" aria-labelledby="viewModalLabelPerj" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade" id="viewModalPerj" tabindex="-1" aria-labelledby="viewModalPerjLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="viewModalLabelPerj">Detail Perjanjian Kerja</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">Detail Perjanjian Kerja</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
 
         <div class="modal-body">
-          <dl class="row">
-            <dt class="col-sm-3">Nomor Dokumen</dt>
-            <dd class="col-sm-9" id="viewPerjNomor"></dd>
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Nomor Dokumen</dt>
+            <dd class="col-sm-8" id="viewPerjNomor">-</dd>
 
-            <dt class="col-sm-3">Pihak</dt>
-            <dd class="col-sm-9" id="viewPerjPihak"></dd>
+            <dt class="col-sm-4">Pihak</dt>
+            <dd class="col-sm-8" id="viewPerjPihak">-</dd>
 
-            <dt class="col-sm-3">Bentuk Kerjasama</dt>
-            <dd class="col-sm-9" id="viewPerjBentuk"></dd>
+            <dt class="col-sm-4">Bentuk Kerjasama</dt>
+            <dd class="col-sm-8" id="viewPerjBentuk">-</dd>
 
-            <dt class="col-sm-3">Deskripsi</dt>
-            <dd class="col-sm-9" id="viewPerjDeskripsi"></dd>
+            <dt class="col-sm-4">Deskripsi</dt>
+            <dd class="col-sm-8" id="viewPerjDeskripsi">-</dd>
 
-            <dt class="col-sm-3">Durasi Kerjasama</dt>
-            <dd class="col-sm-9" id="viewPerjDurasi"></dd>
+            <dt class="col-sm-4">Durasi</dt>
+            <dd class="col-sm-8" id="viewPerjDurasi">-</dd>
 
-            <!-- NOTE: Link GDrive intentionally not shown -->
+            <dt class="col-sm-4">GDrive</dt>
+            <dd class="col-sm-8">
+              <a href="#" id="viewPerjGdrive" target="_blank" class="text-decoration-none text-muted">Tidak ada link</a>
+            </dd>
           </dl>
         </div>
 

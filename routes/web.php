@@ -520,19 +520,40 @@ Route::delete('/spj/arsip_pembukuan_2/delete/{id}', [ArsipPembukuan2Controller::
 
 
 // arsip kegiatan
-Route::get('/spj/arsip_surat_masuk', [ArsipSuratMasukController::class, 'index'])->middleware(['auth','role_user:3']);
+Route::get('/spj/arsip_surat_masuk', [ArsipSuratMasukController::class, 'index'])->middleware(['auth', 'role_user:3']);
+Route::post('/spj/arsip_surat_masuk', [ArsipSuratMasukController::class, 'store'])->middleware(['auth', 'role_user:3']);
+Route::put('/spj/arsip_surat_masuk/{id}', [ArsipSuratMasukController::class, 'update'])->middleware(['auth', 'role_user:3']);
+Route::delete('/spj/arsip_surat_masuk/{id}', [ArsipSuratMasukController::class, 'destroy'])->middleware(['auth', 'role_user:3']);
 
-Route::get('/spj/arsip_surat_keluar', [ArsipSuratKeluarController::class, 'index'])->middleware(['auth','role_user:3']);
+Route::get('/spj/arsip_surat_keluar', [ArsipSuratKeluarController::class, 'index'])->middleware(['auth', 'role_user:3']);
+Route::post('/spj/arsip_surat_keluar', [ArsipSuratKeluarController::class, 'store'])->middleware(['auth', 'role_user:3']);
+Route::put('/spj/arsip_surat_keluar/{id}', [ArsipSuratKeluarController::class, 'update'])->middleware(['auth', 'role_user:3']);
+Route::delete('/spj/arsip_surat_keluar/{id}', [ArsipSuratKeluarController::class, 'destroy'])->middleware(['auth', 'role_user:3']);
 
 Route::get('/spj/arsip_sop', [ArsipSopController::class, 'index'])->middleware(['auth','role_user:3']);
+Route::post('/spj/arsip_sop', [ArsipSopController::class, 'store'])->middleware(['auth','role_user:3']);
+Route::put('/spj/arsip_sop/{id}', [ArsipSopController::class, 'update'])->middleware(['auth','role_user:3']);
+Route::delete('/spj/arsip_sop/{id}', [ArsipSopController::class, 'destroy'])->middleware(['auth','role_user:3']);
 
 Route::get('/spj/arsip_berita_acara', [ArsipBeritaAcaraController::class, 'index'])->middleware(['auth','role_user:3']);
+Route::post('/spj/arsip_berita_acara', [ArsipBeritaAcaraController::class, 'store'])->middleware(['auth','role_user:3']);
+Route::put('/spj/arsip_berita_acara/{id}', [ArsipBeritaAcaraController::class, 'update'])->middleware(['auth','role_user:3']);
+Route::delete('/spj/arsip_berita_acara/{id}', [ArsipBeritaAcaraController::class, 'destroy'])->middleware(['auth','role_user:3']);
 
 Route::get('/spj/arsip_perjanjian_kerja', [ArsipPerjanjianKerjaController::class, 'index'])->middleware(['auth','role_user:3']);
+Route::post('/spj/arsip_perjanjian_kerja', [ArsipPerjanjianKerjaController::class, 'store'])->middleware(['auth','role_user:3']);
+Route::put('/spj/arsip_perjanjian_kerja/{id}', [ArsipPerjanjianKerjaController::class, 'update'])->middleware(['auth','role_user:3']);
+Route::delete('/spj/arsip_perjanjian_kerja/{id}', [ArsipPerjanjianKerjaController::class, 'destroy'])->middleware(['auth','role_user:3']);
 
-Route::get('/spj/arsip_perjalanan_dinas', [ArsipPerjalananDinasController::class,'index'])->middleware(['auth', 'role_user:3']);
+Route::get('/spj/arsip_perjalanan_dinas', [ArsipPerjalananDinasController::class, 'index'])->middleware(['auth','role_user:3']);
+Route::post('/spj/arsip_perjalanan_dinas', [ArsipPerjalananDinasController::class, 'store'])->middleware(['auth','role_user:3']);
+Route::put('/spj/arsip_perjalanan_dinas/{id}', [ArsipPerjalananDinasController::class, 'update'])->middleware(['auth','role_user:3']);
+Route::delete('/spj/arsip_perjalanan_dinas/{id}', [ArsipPerjalananDinasController::class, 'destroy'])->middleware(['auth','role_user:3']);
 
 Route::get('/spj/arsip_notulen_rapat', [ArsipNotulenRapatController::class, 'index'])->middleware(['auth','role_user:3']);
+Route::post('/spj/arsip_notulen_rapat', [ArsipNotulenRapatController::class, 'store'])->middleware(['auth','role_user:3']);
+Route::put('/spj/arsip_notulen_rapat/{id}', [ArsipNotulenRapatController::class, 'update'])->middleware(['auth','role_user:3']);
+Route::delete('/spj/arsip_notulen_rapat/{id}', [ArsipNotulenRapatController::class, 'destroy'])->middleware(['auth','role_user:3']);
 
 // arsip dokumentasi
 Route::get('/spj/arsip_dokumentasi_foto',[ArsipDokumentasiFotoController::class, 'index'])->middleware(['auth','role_user:3']);

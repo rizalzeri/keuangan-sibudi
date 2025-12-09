@@ -1,26 +1,29 @@
 <!-- Modal View -->
 <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="viewModalLabel">Detail Surat Keluar</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">Detail Surat Keluar</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <dl class="row">
-            <dt class="col-sm-3">Nomor Dokumen</dt>
-            <dd class="col-sm-9" id="viewNomor"></dd>
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Nomor Dokumen</dt>
+            <dd class="col-sm-8" id="viewNomor">-</dd>
 
-            <dt class="col-sm-3">Tujuan</dt>
-            <dd class="col-sm-9" id="viewTujuan"></dd>
+            <dt class="col-sm-4">Tujuan</dt>
+            <dd class="col-sm-8" id="viewTujuan">-</dd>
 
-            <dt class="col-sm-3">Judul Surat</dt>
-            <dd class="col-sm-9" id="viewJudul"></dd>
+            <dt class="col-sm-4">Judul</dt>
+            <dd class="col-sm-8" id="viewJudul">-</dd>
 
-            <dt class="col-sm-3">Isi Surat</dt>
-            <dd class="col-sm-9" id="viewIsi"></dd>
+            <dt class="col-sm-4">Isi</dt>
+            <dd class="col-sm-8" id="viewIsi">-</dd>
 
-            <!-- NOTE: Link GDrive tidak ditampilkan di view -->
+            <dt class="col-sm-4">Link GDrive</dt>
+            <dd class="col-sm-8">
+              <a href="#" target="_blank" id="viewGDrive" class="text-decoration-none text-muted">Tidak ada link</a>
+            </dd>
           </dl>
         </div>
         <div class="modal-footer">

@@ -1,24 +1,27 @@
 <!-- Modal View Berita Acara -->
-<div class="modal fade" id="viewModalBerita" tabindex="-1" aria-labelledby="viewModalLabelBerita" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade" id="viewModalBA" tabindex="-1" aria-labelledby="viewModalBALabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="viewModalLabelBerita">Detail Berita Acara</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">Detail Berita Acara</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
 
         <div class="modal-body">
-          <dl class="row">
-            <dt class="col-sm-3">Judul Berita Acara</dt>
-            <dd class="col-sm-9" id="viewJudulBerita"></dd>
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Judul</dt>
+            <dd class="col-sm-8" id="viewJudulBA">-</dd>
 
-            <dt class="col-sm-3">Tanggal Peristiwa</dt>
-            <dd class="col-sm-9" id="viewTanggalBerita"></dd>
+            <dt class="col-sm-4">Tanggal</dt>
+            <dd class="col-sm-8" id="viewTanggalBA">-</dd>
 
-            <dt class="col-sm-3">Deskripsi</dt>
-            <dd class="col-sm-9" id="viewDeskripsiBerita"></dd>
+            <dt class="col-sm-4">Deskripsi</dt>
+            <dd class="col-sm-8" id="viewDeskripsiBA">-</dd>
 
-            <!-- NOTE: Link GDrive intentionally not shown -->
+            <dt class="col-sm-4">GDrive</dt>
+            <dd class="col-sm-8">
+              <a href="#" id="viewGdriveBA" target="_blank" class="text-decoration-none text-muted">Tidak ada link</a>
+            </dd>
           </dl>
         </div>
 
