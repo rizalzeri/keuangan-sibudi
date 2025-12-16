@@ -25,6 +25,7 @@ class ArsipBankKeluar extends Model
         'mengetahui',
         'kategori_pembukuan',
         'dokumen_pendukung',
+        'link_gdrive',
     ];
 
     // casting

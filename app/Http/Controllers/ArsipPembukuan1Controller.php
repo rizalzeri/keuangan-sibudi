@@ -81,9 +81,11 @@ class ArsipPembukuan1Controller extends Controller
                     'id' => $rec->id,
                     'transaksi' => $rec->nama_transaksi,
                     'nomor' => $nomorDokumen,
+                    'tanggal' => $rec->tanggal_transaksi->format('Y-m-d'),        // nilai mentah
+                    'tanggal_display' => $rec->tanggal_transaksi->format('d-m-Y'), // tampilan di UI
                     'jenis' => $jenis,
                     'bukti' => $buktiDukung,
-                    'raw' => $rec, // bila butuh data mentah di view
+                    'link_drive' => $rec->link_gdrive ?? null,
                 ];
             }
         }
@@ -92,7 +94,6 @@ class ArsipPembukuan1Controller extends Controller
         if (empty($years)) {
             $years = [date('Y')];
         }
-
         // kirim ke view
         return view('spj.arsip_pembukuan_1.index', [
             'rows' => $rows,
@@ -102,6 +103,7 @@ class ArsipPembukuan1Controller extends Controller
             'selectedType' => $selectedType,
         ]);
     }
+
 
     private function monthToRoman(int $m): string
     {

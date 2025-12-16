@@ -139,6 +139,15 @@
                 </li>
             </ul>
         </li>
+        {{-- 7. Kelola Akun --}}
+        <li class="nav-item">
+            <a class="nav-link {{ Request::is('spj/arsip_kelola_akun*') ? '' : 'collapsed' }}"
+            href="/spj/arsip_kelola_akun">
+                <i class="bi bi-people-fill"></i>
+                <span>Kelola Akun</span>
+            </a>
+        </li>
+
 
     </ul>
 

@@ -36,17 +36,44 @@
         .colon { width: 20px; }
         .value { flex: 1; border-bottom: 1px dotted #000; padding-bottom: 4px; }
 
+        /* ---- ubah ini ---- */
         .sign-area {
             position: absolute;
-            bottom: 100px;
+            top: 40%;
             left: 48px;
             right: 48px;
+            bottom: 48px;
             display: flex;
             justify-content: space-between;
-            text-align: center;
+            align-items: flex-start; /* penting */
         }
-        .sign-box { width: 220px; }
-        .sign-line { margin-top: 75px; border-top: 1px dotted #000; padding-top: 5px; }
+
+        .sign-box {
+            width: 220px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sign-title {
+            font-weight: 500;
+        }
+
+        .sign-space {
+            height: 90px; /* ruang tanda tangan — bikin sejajar */
+        }
+
+        .sign-line {
+            border-top: 1px dotted #000;
+            padding-top: 6px;
+            font-weight: 500;
+        }
+
+        .sign-spacer {
+            height: 24px;   /* atur tinggi sesuai kebutuhan */
+            visibility: hidden; /* tetap ada di layout, tapi tidak terlihat */
+        }
+
 
         /* tombol download tetap terlihat di preview */
         #downloadBtn {
@@ -124,27 +151,46 @@
         </div>
 
         <div class="sign-area">
-            {{-- Box Mengetahui --}}
-            <div class="sign-box" style = "margin-top: 20px;">
-                Mengetahui
+
+            {{-- MENGETAHUI --}}
+            <div class="sign-box">
+                <div class="sign-spacer"></div>
+                <div class="sign-title">Mengetahui</div>
+
+                {{-- optional jabatan --}}
+                {{-- <div style="font-size:14px">Kepala Bumdes</div> --}}
+
+                <div class="sign-space"></div>
+
                 <div class="sign-line">{{ $mengetahui }}</div>
             </div>
 
-            {{-- Tanggal lokal --}}
+            {{-- PENERIMA --}}
             @php
-                setlocale(LC_TIME, 'id_ID');
-                $tanggal_lokal = \Carbon\Carbon::now()->translatedFormat('j F Y');
+                use Carbon\Carbon;
+
+                try {
+                    $tanggal_for_format = !empty($tanggal) ? $tanggal : now();
+                    $tanggal_lokal = Carbon::parse($tanggal_for_format)
+                        ->locale('id')
+                        ->translatedFormat('j F Y');
+                } catch (\Exception $e) {
+                    $tanggal_lokal = Carbon::now()->locale('id')->translatedFormat('j F Y');
+                }
             @endphp
 
-            {{-- Box Penerima --}}
             <div class="sign-box">
-                <div>
-                    ........, {{ $tanggal_lokal }}
-                </div>
-                Penerima
+                <div class="sign-title">........, {{ $tanggal_lokal }}</div>
+
+                <div>Penerima</div>
+
+                <div class="sign-space"></div>
+
                 <div class="sign-line">{{ $penerima }}</div>
             </div>
+
         </div>
+
 
     </div>
 

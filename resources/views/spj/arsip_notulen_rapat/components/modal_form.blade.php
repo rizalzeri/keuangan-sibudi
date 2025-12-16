@@ -15,7 +15,7 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label for="tanggalNotulen" class="form-label">Tanggal <span class="text-danger">*</span></label>
-              <input type="date" id="tanggalNotulen" name="tanggal_notulen_rapat" class="form-control" required>
+              <input type="text" id="tanggalNotulen" name="tanggal_notulen_rapat" class="form-control" required>
             </div>
 
             <div class="col-md-6">

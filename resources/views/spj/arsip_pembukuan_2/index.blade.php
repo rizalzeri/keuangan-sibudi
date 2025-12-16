@@ -47,6 +47,7 @@
                             <th style="width:60px">No</th>
                             <th>Transaksi</th>
                             <th style="width:150px">Nomor Dokumen</th>
+                            <th style="width:150px">Tanggal Transaksi</th> <!-- NEW -->
                             <th style="width:200px">Jenis SPJ</th>
                             <th>Bukti Dukung</th>
                             <th style="width:150px">Aksi</th>
@@ -54,14 +55,15 @@
                     </thead>
                     <tbody>
                         @foreach($rows as $i => $r)
-                            <tr data-jenis="{{ $r['jenis'] }}">
+                            <tr data-jenis="{{ $r['jenis'] }}" data-link="{{ e($r['link_drive'] ?? '') }}">
                                 <td class="text-center">{{ $i + 1 }}</td>
                                 <td>{{ $r['transaksi'] }}</td>
                                 <td>{{ $r['nomor'] }}</td>
+                                <td>{{ $r['tanggal_display'] }}</td> <!-- NEW -->
                                 <td>{{ $r['jenis'] }}</td>
                                 <td>{{ $r['bukti'] }}</td>
                                 <td class="text-center">
-                                    <button class="btn btn-sm btn-info btn-view" title="Lihat" data-id="{{ $r['id'] }}"><i class="bi bi-eye"></i></button>
+                                    <button class="btn btn-sm btn-info btn-view" title="Lihat" data-id="{{ $r['id'] }}" data-link="{{ e($r['link_drive'] ?? '') }}"><i class="bi bi-eye"></i></button>
                                     <button class="btn btn-sm btn-warning btn-edit" title="Edit" data-id="{{ $r['id'] }}"><i class="bi bi-pencil"></i></button>
                                     <button class="btn btn-sm btn-danger btn-delete" title="Hapus" data-id="{{ $r['id'] }}"><i class="bi bi-trash"></i></button>
                                 </td>
@@ -91,8 +93,10 @@
               <tbody>
                   <tr><th>Transaksi</th><td id="viewTransaksi"></td></tr>
                   <tr><th>Nomor Dokumen</th><td id="viewNomor"></td></tr>
+                  <tr><th>Tanggal Transaksi</th><td id="viewTanggal"></td></tr> <!-- NEW -->
                   <tr><th>Jenis SPJ</th><td id="viewJenis"></td></tr>
                   <tr><th>Bukti Dukung</th><td id="viewBukti"></td></tr>
+                  <tr><th>Link Google Drive</th><td id="viewLinkDrive"></td></tr>
               </tbody>
           </table>
         </div>
@@ -109,10 +113,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // inisialisasi DataTable
-
-
-    // ketika filter berubah -> reload page server-side dengan query params (untuk nomor urut per tahun yang benar)
+    // ketika filter berubah -> reload page server-side dengan query params
     $('#filterType, #filterYear').on('change', function () {
         const qYear = $('#filterYear').val();
         const qType = $('#filterType').val();
@@ -122,33 +123,54 @@ document.addEventListener('DOMContentLoaded', function () {
         window.location.href = url.toString();
     });
 
-    // action buttons (placeholder — Anda bisa sambungkan ke route edit/delete sesuai jenis)
+    // action buttons (lihat)
     $('#arsipTable tbody').on('click', '.btn-view', function () {
         const $tr = $(this).closest('tr');
         const id = $(this).data('id');
+        const link = $(this).data('link') || $tr.data('link') || '';
 
-        const transaksi = $tr.find('td').eq(1).text();
-        const nomor = $tr.find('td').eq(2).text();
-        const jenis = $tr.find('td').eq(3).text();
-        const bukti = $tr.find('td').eq(4).text();
+        const transaksi = $tr.find('td').eq(1).text().trim();
+        const nomor = $tr.find('td').eq(2).text().trim();
+        const tanggal = $tr.find('td').eq(3).text().trim(); // updated index
+        const jenis = $tr.find('td').eq(4).text().trim();
+        const bukti = $tr.find('td').eq(5).text().trim();
 
         $('#viewTransaksi').text(transaksi);
         $('#viewNomor').text(nomor);
+        $('#viewTanggal').text(tanggal); // set tanggal
         $('#viewJenis').text(jenis);
         $('#viewBukti').text(bukti);
-        $('#modalView').modal('show');
+
+        if (link && link !== "") {
+            let displayLink = link;
+            if (!/^https?:\/\//i.test(displayLink)) displayLink = 'https://' + displayLink;
+            $('#viewLinkDrive').html(`<a href="${displayLink}" target="_blank" rel="noopener noreferrer">Buka Dokumen</a>`);
+        } else {
+            $('#viewLinkDrive').html(`<em>Tidak tersedia</em>`);
+        }
+
+        // Tampilkan modal (Bootstrap 5)
+        var modalEl = document.getElementById('modalView');
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        } else {
+            $('#modalView').modal('show');
+        }
     });
 
+    // edit
     $('#arsipTable tbody').on('click', '.btn-edit', function () {
         const $tr = $(this).closest('tr');
         const id = $(this).data('id');
-        alert('Edit: ' + $tr.find('td').eq(1).text() + '\nID: ' + id);
+        alert('Edit: ' + $tr.find('td').eq(1).text().trim() + '\nID: ' + id);
     });
 
+    // delete
     $('#arsipTable tbody').on('click', '.btn-delete', function () {
         const $tr = $(this).closest('tr');
         const id = $(this).data('id');
-        const jenis = $tr.find('td').eq(3).text();
+        const jenis = $tr.find('td').eq(4).text().trim(); // updated index
 
         Swal.fire({
             title: 'Hapus Data?',
@@ -161,7 +183,6 @@ document.addEventListener('DOMContentLoaded', function () {
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                // panggil route delete via AJAX
                 $.ajax({
                     url: "{{ url('/spj/arsip_pembukuan_2/delete') }}/" + id,
                     type: 'DELETE',
@@ -175,11 +196,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                 title: 'Terhapus!',
                                 text: res.message,
                                 icon: 'success',
-                                timer: 3000,       // reload otomatis setelah 3 detik
+                                timer: 3000,
                                 timerProgressBar: true,
                                 showConfirmButton: true
                             }).then((result) => {
-                                // reload saat user klik OK
                                 location.reload();
                             });
                         } else {
@@ -194,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Cetak Rekap (buka tab baru — implement sesuai route rekap di server)
+    // Cetak Rekap
     $('#btnRekap, #btnRekapBottom').on('click', function () {
         const year = $('#filterYear').val();
         const type = $('#filterType').val();

@@ -321,5 +321,13 @@ $(function () {
         try { $('#tblVideo').DataTable(); } catch (e) { console.warn('DataTable init failed', e); }
     }
 });
+
+flatpickr("#videoTanggal", {
+    dateFormat: "Y-m-d",
+    altInput: true,
+    altFormat: "l, d F Y",
+    locale: "id", // Bahasa Indonesia
+    allowInput: true
+});
 </script>
 @endsection

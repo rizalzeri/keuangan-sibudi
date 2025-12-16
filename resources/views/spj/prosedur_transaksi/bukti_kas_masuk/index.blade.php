@@ -32,7 +32,7 @@
             <div class="row-flex">
                 <label for="tanggal">Tanggal</label>
                 <div class="input-wrap">
-                    <input type="date" id="tanggal" name="tanggal" class="form-control"
+                    <input type="text" id="tanggal" name="tanggal" class="form-control"
                         value="{{ date('Y-m-d') }}" required>
                 </div>
             </div>
@@ -69,19 +69,36 @@
                 </div>
             </div>
 
+            <!-- MENYETUJUI -> jadi dropdown (disabled awalnya) -->
             <div class="row-flex">
-                <label for="menyetujui">Menyetujui</label>
+                <label for="menyetujui_select">Menyetujui</label>
                 <div class="input-wrap">
-                    <input type="text" id="menyetujui" name="menyetujui" class="form-control">
+                    <select id="menyetujui_select" class="form-control" disabled>
+                        <option value="">-- Pilih Menyetujui --</option>
+                        <!-- options diisi via JS (hanya 1 opsi rekomendasi) -->
+                    </select>
+
+                    <!-- Hidden: hanya nama yang disimpan -->
+                    <input type="hidden" id="menyetujui" name="menyetujui" value="">
+                    <!-- tetap ada tapi akan dikosongkan (opsional) -->
+                    <input type="hidden" id="menyetujui_id" name="menyetujui_id" value="">
                 </div>
             </div>
 
+            <!-- MENGETAHUI -> jadi dropdown (disabled awalnya) -->
             <div class="row-flex">
-                <label for="mengetahui">Mengetahui</label>
+                <label for="mengetahui_select">Mengetahui</label>
                 <div class="input-wrap">
-                    <input type="text" id="mengetahui" name="mengetahui" class="form-control">
+                    <select id="mengetahui_select" class="form-control" disabled>
+                        <option value="">-- Pilih Mengetahui --</option>
+                        <!-- options diisi via JS (hanya 1 opsi rekomendasi) -->
+                    </select>
+
+                    <input type="hidden" id="mengetahui" name="mengetahui" value="">
+                    <input type="hidden" id="mengetahui_id" name="mengetahui_id" value="">
                 </div>
             </div>
+
 
             <div class="row-flex">
                 <label>Kategori Pembukuan</label>
@@ -142,7 +159,14 @@
                     </div>
                 </div>
             </div>
-
+            <div class="row-flex">
+                <label for="link_gdrive">Link Google Drive</label>
+                <div class="input-wrap">
+                    <input type="url" id="link_gdrive" name="link_gdrive" class="form-control"
+                           placeholder="https://drive.google.com/drive/folders/..." value="{{ old('link_gdrive') }}">
+                    <div class="form-text">Opsional — masukkan link file/folder Google Drive yang terkait.</div>
+                </div>
+            </div>
 
             <div class="text-end mt-3">
                 <button id="saveBtn" type="submit" class="btn btn-success"><i class="bi bi-save"></i> Simpan & Cetak</button>
@@ -160,6 +184,14 @@
         const display = document.getElementById('nominal_display');
         const hidden  = document.getElementById('nominal');
 
+        const mengetahuiSelect = document.getElementById('mengetahui_select');
+        const menyetujuiSelect = document.getElementById('menyetujui_select');
+
+        const mengetahuiHidden = document.getElementById('mengetahui');
+        const mengetahuiIdHidden = document.getElementById('mengetahui_id');
+        const menyetujuiHidden = document.getElementById('menyetujui');
+        const menyetujuiIdHidden = document.getElementById('menyetujui_id');
+
         /* -----------------------
            FORMAT NOMINAL RUPIAH
         -------------------------*/
@@ -171,6 +203,8 @@
             const angka = value.replace(/\D/g, "").replace(/^0+/, "") || "0";
             hidden.value = angka;
             display.value = angka === "0" ? "" : "Rp." + formatRupiah(angka);
+            // setelah nominal update, panggil API untuk memperbarui dropdown
+            loadOtorisasiOptions(parseInt(angka || 0, 10));
         }
 
         display.addEventListener('input', function () {
@@ -196,6 +230,130 @@
             if (!isNumber) e.preventDefault();
         });
 
+        /* ---------------------------
+           Helpers: clear select (keep placeholder)
+        ----------------------------*/
+        function clearSelectKeepPlaceholder(sel) {
+            while (sel.options.length > 1) sel.remove(1); // keep the first placeholder
+        }
+
+        function setSelectSingleOption(sel, value, text, personalisasi_id = '') {
+            clearSelectKeepPlaceholder(sel);
+            const opt = document.createElement('option');
+            opt.value = value || '';
+            opt.text = text || '';
+            if (personalisasi_id) opt.setAttribute('data-personalisasi-id', personalisasi_id);
+            sel.add(opt);
+        }
+
+        /* -----------------------------------
+           Fetch opsi otorisasi berdasarkan nominal
+           HANYA menampilkan 1 opsi rekomendasi (jika ada).
+           Endpoint: /spj/klasifikasi/classify?nominal=...
+        --------------------------------------*/
+        async function loadOtorisasiOptions(nominalValue) {
+            try {
+                // jika nominal 0 atau kosong -> kosongkan dropdown dan disable
+                if (!nominalValue || nominalValue <= 0) {
+                    clearSelectKeepPlaceholder(mengetahuiSelect);
+                    clearSelectKeepPlaceholder(menyetujuiSelect);
+                    mengetahuiSelect.disabled = true;
+                    menyetujuiSelect.disabled = true;
+
+                    // kosongkan hidden fields
+                    mengetahuiHidden.value = '';
+                    mengetahuiIdHidden.value = '';
+                    menyetujuiHidden.value = '';
+                    menyetujuiIdHidden.value = '';
+                    return;
+                }
+
+                const url = "{{ route('spj.klasifikasi.classify') }}?nominal=" + encodeURIComponent(nominalValue || 0);
+                const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" }});
+                if (!res.ok) {
+                    console.warn('classify API returned', res.status);
+                    // disable selects if error
+                    mengetahuiSelect.disabled = true;
+                    menyetujuiSelect.disabled = true;
+                    return;
+                }
+                const body = await res.json();
+                if (!body.success) {
+                    mengetahuiSelect.disabled = true;
+                    menyetujuiSelect.disabled = true;
+                    return;
+                }
+
+                const data = body.data || {};
+                const recommended = data.recommended || {};
+
+                // default: clear + disabled
+                clearSelectKeepPlaceholder(mengetahuiSelect);
+                clearSelectKeepPlaceholder(menyetujuiSelect);
+                mengetahuiSelect.disabled = true;
+                menyetujuiSelect.disabled = true;
+
+                // --- MENGETAHUI: jika ada rekomendasi, tampilkan 1 option (nama saja) dan enable select
+                if (recommended.mengetahui && recommended.mengetahui.nama) {
+                    // tampilkan nama saja (tanpa jabatan)
+                    setSelectSingleOption(mengetahuiSelect, recommended.mengetahui.id, recommended.mengetahui.nama, recommended.mengetahui.personalisasi_id || '');
+                    mengetahuiSelect.disabled = false;
+
+                    // simpan *nama* ke hidden (sesuai permintaan)
+                    mengetahuiHidden.value = recommended.mengetahui.nama || '';
+                    // kosongkan id (karena kamu mau save nama saja). jika ingin menyimpan id, set personalisasi_id
+                    mengetahuiIdHidden.value = '';
+                } else {
+                    // tidak ada rekomendasi, kosongkan hidden
+                    mengetahuiHidden.value = '';
+                    mengetahuiIdHidden.value = '';
+                }
+
+                // --- MENYETUJUI: jika ada rekomendasi, tampilkan 1 option (nama saja) dan enable select
+                if (recommended.persetujuan && recommended.persetujuan.nama) {
+                    setSelectSingleOption(menyetujuiSelect, recommended.persetujuan.id, recommended.persetujuan.nama, recommended.persetujuan.personalisasi_id || '');
+                    menyetujuiSelect.disabled = false;
+
+                    // simpan nama saja
+                    menyetujuiHidden.value = recommended.persetujuan.nama || '';
+                    menyetujuiIdHidden.value = '';
+                } else {
+                    menyetujuiHidden.value = '';
+                    menyetujuiIdHidden.value = '';
+                }
+
+            } catch (err) {
+                console.error('Error loadOtorisasiOptions', err);
+                mengetahuiSelect.disabled = true;
+                menyetujuiSelect.disabled = true;
+            }
+        }
+
+        /* -----------------------------------
+           Sync hidden fields jika user ubah pilihan manual (meski hanya 1 opsi)
+        --------------------------------------*/
+        mengetahuiSelect.addEventListener('change', function () {
+            const selOpt = this.options[this.selectedIndex];
+            const nama = selOpt ? selOpt.text : '';
+            mengetahuiHidden.value = nama || '';
+            // tetap kosongkan id karena save nama saja
+            mengetahuiIdHidden.value = '';
+        });
+
+        menyetujuiSelect.addEventListener('change', function () {
+            const selOpt = this.options[this.selectedIndex];
+            const nama = selOpt ? selOpt.text : '';
+            menyetujuiHidden.value = nama || '';
+            menyetujuiIdHidden.value = '';
+        });
+
+        /* -----------------------------------
+           On page load: keep selects empty & disabled
+        --------------------------------------*/
+        clearSelectKeepPlaceholder(mengetahuiSelect);
+        clearSelectKeepPlaceholder(menyetujuiSelect);
+        mengetahuiSelect.disabled = true;
+        menyetujuiSelect.disabled = true;
 
         /* -----------------------------------
            HANDLE SUBMIT: PRINT + SIMPAN DATA
@@ -211,24 +369,19 @@
             // COPY semua field ke QueryString untuk halaman print
             for (const pair of fd.entries()) {
                 const [k, v] = pair;
-
-                if (k.endsWith("[]")) {
-                    params.append(k, v);
-                } else {
-                    params.append(k, v);
-                }
+                params.append(k, v);
             }
 
             // === 1. Buka halaman print ===
             const printUrl = "{{ url('/spj/bukti_kas_masuk/print') }}?" + params.toString();
             window.open(printUrl, "_blank");
 
-            // === 2. Simpan ke database via fetch POST ===
+            // === 2. Simpan ke database via fetch POST (AJAX) ===
             fetch(form.action, {
                 method: "POST",
                 headers: {
                     "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-                    "X-Requested-With": "XMLHttpRequest", // Tambahkan!
+                    "X-Requested-With": "XMLHttpRequest",
                     "Accept": "application/json"
                 },
                 body: fd
@@ -259,10 +412,19 @@
                 });
             });
 
-
         });
 
     });
+
+    flatpickr("#tanggal", {
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "l, d F Y",
+        locale: "id", // Bahasa Indonesia
+        allowInput: true
+    });
 </script>
+
+
 
 @endsection

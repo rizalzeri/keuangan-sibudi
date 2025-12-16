@@ -18,7 +18,7 @@
 
           <div class="mb-3">
             <label for="baTanggal" class="form-label">Tanggal Peristiwa <span class="text-danger">*</span></label>
-            <input type="date" id="baTanggal" name="tanggal_peristiwa" class="form-control" required>
+            <input type="text" id="baTanggal" name="tanggal_peristiwa" class="form-control"  required>
           </div>
 
           <div class="mb-3">

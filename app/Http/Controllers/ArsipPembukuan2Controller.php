@@ -12,7 +12,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ArsipPembukuan2Controller extends Controller
 {
-    // Sample dataset (replace with DB later)
     public function index(Request $request)
     {
         // tahun dipilih (default tahun sekarang)
@@ -56,20 +55,19 @@ class ArsipPembukuan2Controller extends Controller
                 continue;
             }
 
-            // ambil data untuk tahun yang dipilih
+            // ambil data untuk tahun yang dipilih, kategori_pembukuan = 2 (Pembukuan 2)
             $collection = $model::whereYear('tanggal_transaksi', $selectedYear)
-            ->where('kategori_pembukuan', '2')
-            ->orderBy('tanggal_transaksi', 'asc')
-            ->orderBy('id', 'asc')
-            ->get();
+                ->where('kategori_pembukuan', '2')
+                ->orderBy('tanggal_transaksi', 'asc')
+                ->orderBy('id', 'asc')
+                ->get();
 
-
-            // nomor urut per jenis per tahun (2..n)
+            // nomor urut per jenis per tahun (1..n)
             $seq = 0;
             foreach ($collection as $rec) {
                 $seq++;
                 $seqStr = str_pad($seq, 3, '0', STR_PAD_LEFT);
-                $bulan = (int) $rec->tanggal_transaksi->format('n'); // 2..22
+                $bulan = (int) $rec->tanggal_transaksi->format('n'); // 1..12
                 $roman = $this->monthToRoman($bulan);
                 $tahun = $rec->tanggal_transaksi->format('Y');
 
@@ -83,9 +81,12 @@ class ArsipPembukuan2Controller extends Controller
                     'id' => $rec->id,
                     'transaksi' => $rec->nama_transaksi,
                     'nomor' => $nomorDokumen,
+                    // tambahkan tanggal mentah & tampilan:
+                    'tanggal' => $rec->tanggal_transaksi->format('Y-m-d'),
+                    'tanggal_display' => $rec->tanggal_transaksi->format('d-m-Y'),
                     'jenis' => $jenis,
                     'bukti' => $buktiDukung,
-                    'raw' => $rec, // bila butuh data mentah di view
+                    'link_drive' => $rec->link_gdrive ?? null,
                 ];
             }
         }
@@ -104,6 +105,7 @@ class ArsipPembukuan2Controller extends Controller
             'selectedType' => $selectedType,
         ]);
     }
+
 
     private function monthToRoman(int $m): string
     {

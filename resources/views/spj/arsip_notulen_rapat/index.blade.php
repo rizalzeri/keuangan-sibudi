@@ -80,9 +80,16 @@ function format_date_id($iso){
 
 @include('spj.arsip_notulen_rapat.components.modal_form')
 @include('spj.arsip_notulen_rapat.components.modal_view')
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- jQuery Timepicker CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css"/>
+
+<!-- jQuery Timepicker JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
 $(function () {
     $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
@@ -356,6 +363,22 @@ $(function () {
     if ($.fn.DataTable) {
         try { $('#tblNotulen').DataTable(); } catch (e) { console.warn('DataTable init failed', e); }
     }
+    flatpickr("#tanggalNotulen", {
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "l, d F Y",
+        locale: "id",
+        allowInput: true
+    });
+    // flatpickr("#waktuNotulen", {
+    //     enableTime: true,
+    //     noCalendar: true,
+    //     dateFormat: "H:i",
+    //     time_24hr: true
+    // });
+
 });
+
+
 </script>
 @endsection

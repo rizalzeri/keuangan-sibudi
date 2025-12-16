@@ -27,12 +27,12 @@ class ProsedurTransaksiController extends Controller
             'menyetujui' => 'nullable|string',
             'mengetahui' => 'nullable|string',
             'kategori_pembukuan' => 'required|in:1,2',
-            'dokumen_pendukung' => 'nullable', // can be array or json/string
+            'dokumen_pendukung' => 'nullable',
+            'link_gdrive' => 'nullable|url|max:2048',
         ];
 
         $validated = $request->validate($rules);
 
-        // map field names from form -> table column names
         $payload = [
             'tanggal_transaksi'   => $validated['tanggal'],
             'nama_transaksi'      => $validated['nama_transaksi'],
@@ -42,6 +42,7 @@ class ProsedurTransaksiController extends Controller
             'menyetujui'          => $validated['menyetujui'] ?? null,
             'mengetahui'          => $validated['mengetahui'] ?? null,
             'kategori_pembukuan'  => (string) ($validated['kategori_pembukuan'] ?? '1'),
+            'link_gdrive'         => $validated['link_gdrive'] ?? null,
         ];
 
         // handle dokumen_pendukung: accept array or comma separated string or JSON string
@@ -50,12 +51,10 @@ class ProsedurTransaksiController extends Controller
             if (is_array($docs)) {
                 $payload['dokumen_pendukung'] = $docs;
             } else {
-                // try decode json, otherwise split by comma
                 $try = json_decode($docs, true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($try)) {
                     $payload['dokumen_pendukung'] = $try;
                 } else {
-                    // split by comma and trim
                     $payload['dokumen_pendukung'] = array_values(array_filter(array_map('trim', explode(',', (string)$docs))));
                 }
             }
@@ -87,6 +86,7 @@ class ProsedurTransaksiController extends Controller
             'mengetahui' => 'nullable|string',
             'kategori_pembukuan' => 'required|in:1,2',
             'dokumen_pendukung' => 'nullable',
+            'link_gdrive' => 'nullable|url|max:2048',
         ];
 
         $validated = $request->validate($rules);
@@ -108,6 +108,7 @@ class ProsedurTransaksiController extends Controller
             'menyetujui'          => $validated['menyetujui'] ?? null,
             'mengetahui'          => $validated['mengetahui'] ?? null,
             'kategori_pembukuan'  => (string) ($validated['kategori_pembukuan'] ?? '1'),
+            'link_gdrive'         => $validated['link_gdrive'] ?? null,
         ];
 
         $docs = $request->input('dokumen_pendukung', null);
@@ -196,6 +197,7 @@ class ProsedurTransaksiController extends Controller
             'mengetahui' => 'nullable|string',
             'kategori_pembukuan' => 'required|in:1,2',
             'dokumen_pendukung' => 'nullable',
+            'link_gdrive' => 'nullable|url|max:2048',
         ];
 
         $validated = $request->validate($rules);
@@ -209,6 +211,7 @@ class ProsedurTransaksiController extends Controller
             'menyetujui'          => $validated['menyetujui'] ?? null,
             'mengetahui'          => $validated['mengetahui'] ?? null,
             'kategori_pembukuan'  => (string) ($validated['kategori_pembukuan'] ?? '1'),
+            'link_gdrive'         => $validated['link_gdrive'] ?? null,
         ];
 
         // handle dokumen pendukung
@@ -255,6 +258,7 @@ class ProsedurTransaksiController extends Controller
             'mengetahui' => 'nullable|string',
             'kategori_pembukuan' => 'required|in:1,2',
             'dokumen_pendukung' => 'nullable',
+            'link_gdrive' => 'nullable|url|max:2048',
         ];
 
         $validated = $request->validate($rules);
@@ -276,6 +280,7 @@ class ProsedurTransaksiController extends Controller
             'menyetujui'          => $validated['menyetujui'] ?? null,
             'mengetahui'          => $validated['mengetahui'] ?? null,
             'kategori_pembukuan'  => (string) ($validated['kategori_pembukuan'] ?? '1'),
+            'link_gdrive'         => $validated['link_gdrive'] ?? null,
         ];
 
         $docs = $request->input('dokumen_pendukung', null);
@@ -370,6 +375,7 @@ class ProsedurTransaksiController extends Controller
             'mengetahui' => 'nullable|string',
             'kategori_pembukuan' => 'required|in:1,2',
             'dokumen_pendukung' => 'nullable',
+            'link_gdrive' => 'nullable|url|max:2048',
         ];
 
         $validated = $request->validate($rules);
@@ -383,6 +389,7 @@ class ProsedurTransaksiController extends Controller
             'menyetujui'          => $validated['menyetujui'] ?? null,
             'mengetahui'          => $validated['mengetahui'] ?? null,
             'kategori_pembukuan'  => (string) ($validated['kategori_pembukuan'] ?? '1'),
+            'link_gdrive'         => $validated['link_gdrive'] ?? null,
         ];
 
         // handle dokumen pendukung
@@ -429,6 +436,7 @@ class ProsedurTransaksiController extends Controller
             'mengetahui' => 'nullable|string',
             'kategori_pembukuan' => 'required|in:1,2',
             'dokumen_pendukung' => 'nullable',
+            'link_gdrive' => 'nullable|url|max:2048',
         ];
 
         $validated = $request->validate($rules);
@@ -450,6 +458,7 @@ class ProsedurTransaksiController extends Controller
             'menyetujui'          => $validated['menyetujui'] ?? null,
             'mengetahui'          => $validated['mengetahui'] ?? null,
             'kategori_pembukuan'  => (string) ($validated['kategori_pembukuan'] ?? '1'),
+            'link_gdrive' => 'nullable|url|max:2048',
         ];
 
         $docs = $request->input('dokumen_pendukung', null);
@@ -542,6 +551,7 @@ class ProsedurTransaksiController extends Controller
             'mengetahui' => 'nullable|string',
             'kategori_pembukuan' => 'required|in:1,2',
             'dokumen_pendukung' => 'nullable', // can be array or json/string
+            'link_gdrive' => 'nullable|url|max:2048',
         ];
 
         $validated = $request->validate($rules);
@@ -556,6 +566,7 @@ class ProsedurTransaksiController extends Controller
             'menyetujui'          => $validated['menyetujui'] ?? null,
             'mengetahui'          => $validated['mengetahui'] ?? null,
             'kategori_pembukuan'  => (string) ($validated['kategori_pembukuan'] ?? '1'),
+            'link_gdrive'         => $validated['link_gdrive'] ?? null,
         ];
 
         // handle dokumen_pendukung: accept array or comma separated string or JSON string
@@ -601,6 +612,7 @@ class ProsedurTransaksiController extends Controller
             'mengetahui' => 'nullable|string',
             'kategori_pembukuan' => 'required|in:1,2',
             'dokumen_pendukung' => 'nullable',
+            'link_gdrive' => 'nullable|url|max:2048',
         ];
 
         $validated = $request->validate($rules);
@@ -622,6 +634,7 @@ class ProsedurTransaksiController extends Controller
             'menyetujui'          => $validated['menyetujui'] ?? null,
             'mengetahui'          => $validated['mengetahui'] ?? null,
             'kategori_pembukuan'  => (string) ($validated['kategori_pembukuan'] ?? '1'),
+
         ];
 
         $docs = $request->input('dokumen_pendukung', null);

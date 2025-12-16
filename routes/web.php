@@ -57,6 +57,7 @@ use App\Http\Controllers\ArsipNotulenRapatController;
 use App\Http\Controllers\ArsipDokumentasiFotoController;
 use App\Http\Controllers\ArsipDokumentasiVideoController;
 use App\Http\Controllers\ArsipDokumentasiBerkasDokumenController;
+use App\Http\Controllers\ArsipKelolaAkunController;
 use Illuminate\Support\Facades\Http;
 
 /*
@@ -571,3 +572,31 @@ Route::get('/spj/arsip_dokumentasi_berkas_dokumen', [ArsipDokumentasiBerkasDokum
 Route::post('/spj/arsip_dokumentasi_berkas_dokumen', [ArsipDokumentasiBerkasDokumenController::class,'store'])->middleware(['auth','role_user:3']);
 Route::put('/spj/arsip_dokumentasi_berkas_dokumen/{id}', [ArsipDokumentasiBerkasDokumenController::class,'update'])->middleware(['auth','role_user:3']);
 Route::delete('/spj/arsip_dokumentasi_berkas_dokumen/{id}', [ArsipDokumentasiBerkasDokumenController::class,'destroy'])->middleware(['auth','role_user:3']);
+
+Route::group(['middleware' => ['auth','role_user:3']], function () {
+    Route::get('/spj/arsip_kelola_akun', [ArsipKelolaAkunController::class, 'index']);
+
+    // Personalisasi
+    Route::post('/spj/arsip_kelola_akun/personalisasi', [ArsipKelolaAkunController::class, 'storePersonalisasi']);
+    Route::put('/spj/arsip_kelola_akun/personalisasi/{id}', [ArsipKelolaAkunController::class, 'updatePersonalisasi']);
+    Route::delete('/spj/arsip_kelola_akun/personalisasi/{id}', [ArsipKelolaAkunController::class, 'destroyPersonalisasi']);
+
+    // Mengetahui
+    Route::post('/spj/arsip_kelola_akun/mengetahui', [ArsipKelolaAkunController::class, 'storeMengetahui']);
+    Route::put('/spj/arsip_kelola_akun/mengetahui/{id}', [ArsipKelolaAkunController::class, 'updateMengetahui']);
+    Route::delete('/spj/arsip_kelola_akun/mengetahui/{id}', [ArsipKelolaAkunController::class, 'destroyMengetahui']);
+
+    // Persetujuan
+    Route::post('/spj/arsip_kelola_akun/persetujuan', [ArsipKelolaAkunController::class, 'storePersetujuan']);
+    Route::put('/spj/arsip_kelola_akun/persetujuan/{id}', [ArsipKelolaAkunController::class, 'updatePersetujuan']);
+    Route::delete('/spj/arsip_kelola_akun/persetujuan/{id}', [ArsipKelolaAkunController::class, 'destroyPersetujuan']);
+
+    // Klasifikasi Transaksi
+    Route::post('/spj/arsip_kelola_akun/klasifikasi', [ArsipKelolaAkunController::class, 'storeKlasifikasi']);
+    Route::put('/spj/arsip_kelola_akun/klasifikasi/{id}', [ArsipKelolaAkunController::class, 'updateKlasifikasi']);
+    Route::delete('/spj/arsip_kelola_akun/klasifikasi/{id}', [ArsipKelolaAkunController::class, 'destroyKlasifikasi']);
+
+    // web.php
+    Route::get('/spj/klasifikasi/classify', [ArsipKelolaAkunController::class, 'classifyByNominal'])->name('spj.klasifikasi.classify');
+
+});
