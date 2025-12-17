@@ -18,6 +18,7 @@ class ArsipKasKeluar extends Model
     protected $fillable = [
         'nama_transaksi',
         'tanggal_transaksi',
+        'nomor_dokumen',
         'tujuan',
         'nominal',
         'penerima',

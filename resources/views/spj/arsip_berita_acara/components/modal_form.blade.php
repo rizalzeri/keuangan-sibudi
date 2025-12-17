@@ -1,4 +1,3 @@
-<!-- Modal Form Berita Acara -->
 <div class="modal fade" id="formModalBA" tabindex="-1" aria-labelledby="formModalLabelBA" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <form id="baForm" action="{{ url('/spj/arsip_berita_acara') }}" method="POST" class="modal-content">
@@ -14,6 +13,13 @@
           <div class="mb-3">
             <label for="baJudul" class="form-label">Judul <span class="text-danger">*</span></label>
             <input type="text" id="baJudul" name="judul_berita_acara" class="form-control" required>
+          </div>
+
+          <!-- nomor dokumen: disimpan tapi disembunyikan saat create (wrapper d-none) -->
+          <div class="mb-3 d-none" id="baNomorWrapper">
+            <label for="baNomor" class="form-label">Nomor Dokumen</label>
+            <input type="text" id="baNomor" name="nomor_dokumen" class="form-control">
+            <small class="text-muted">Nomor akan digenerate otomatis saat create: BA/{no}/{BULAN_ROMAWI}/{TAHUN}</small>
           </div>
 
           <div class="mb-3">

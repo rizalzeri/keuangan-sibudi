@@ -18,9 +18,9 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width:60px">No</th>
+                            <th>Judul Surat</th>
                             <th>Nomor Dokumen</th>
                             <th>Tujuan</th>
-                            <th>Judul Surat</th>
                             <th>Isi</th>
                             <th style="width:160px">Aksi</th>
                         </tr>
@@ -29,12 +29,12 @@
                         @foreach ($surats as $i => $s)
                             <tr data-id="{{ $s->id }}">
                                 <td class="text-center">{{ $i + 1 }}</td>
+                                <td class="sk-judul">{{ $s->judul_surat }}</td>
                                 <td class="sk-nomor">{{ $s->nomor_dokumen }}</td>
                                 <td class="sk-tujuan">{{ $s->tujuan }}</td>
-                                <td class="sk-judul">{{ $s->judul_surat }}</td>
                                 <td class="sk-isi">{!! nl2br(e(Str::limit($s->isi, 200))) !!}</td>
                                 <td class="text-center">
-                                    <span class="row-link d-none">{{ $s->link_gdrive }}</span>
+                                    <span class="sk-gdrive d-none">{{ $s->link_gdrive }}</span>
                                     <button class="btn btn-sm btn-info btn-view" data-id="{{ $s->id }}" title="Lihat"><i class="bi bi-eye"></i></button>
                                     <button class="btn btn-sm btn-warning btn-edit" data-id="{{ $s->id }}" title="Edit"><i class="bi bi-pencil"></i></button>
                                     <button class="btn btn-sm btn-danger btn-delete" data-id="{{ $s->id }}" title="Hapus"><i class="bi bi-trash"></i></button>
@@ -43,6 +43,7 @@
                         @endforeach
                     </tbody>
                 </table>
+
             </div>
         </div>
     </div>
@@ -80,6 +81,7 @@ $(function () {
         $form.attr('action', createAction);
         $('#rowIndex').val('');
         $('#formModalLabel').text('Tambah Surat Keluar');
+        $('#nomorDokumen').val('Otomatis').prop('readonly', true);
     });
     function lockRawInput(id) {
         const el = document.getElementById(id);
@@ -95,8 +97,8 @@ $(function () {
         const methodOverride = ($form.find('input[name="_method"]').val() || 'POST').toUpperCase();
         const httpMethod = methodOverride === 'POST' ? 'POST' : methodOverride;
 
+        // build payload but _exclude_ nomor_dokumen when creating
         const payload = {
-            nomor_dokumen: $('#nomorDokumen').data('raw') || $('#nomorDokumen').val(),
             tujuan: $('#tujuan').data('raw') || $('#tujuan').val(),
             judul_surat: $('#judul').data('raw') || $('#judul').val(),
             isi: $('#isi').data('raw') || $('#isi').val(),
@@ -105,8 +107,14 @@ $(function () {
             _method: methodOverride
         };
 
-        if (!payload.nomor_dokumen || !payload.tujuan || !payload.judul_surat) {
-            Swal.fire('Kesalahan', 'Nomor Dokumen, Tujuan dan Judul wajib diisi', 'error');
+        // only include nomor_dokumen when update (PUT)
+        if (httpMethod !== 'POST') {
+            payload.nomor_dokumen = $('#nomorDokumen').data('raw') || $('#nomorDokumen').val();
+        }
+
+        // validasi client side
+        if (!payload.tujuan || !payload.judul_surat) {
+            Swal.fire('Kesalahan', 'Tujuan dan Judul wajib diisi', 'error');
             return;
         }
 
@@ -155,16 +163,16 @@ $(function () {
         });
     });
 
-    // VIEW — ambil kolom dengan td.eq
+    // VIEW
     $tbody.on('click', '.btn-view', function () {
         const $tr = $(this).closest('tr');
-        // td index: 0=no, 1=nomor, 2=tujuan, 3=judul, 4=isi, 5=gdrive(hidden), 6=aksi
-        const nomor = $tr.find('td').eq(1).text().trim() || '-';
-        const tujuan = $tr.find('td').eq(2).text().trim() || '-';
-        const judul = $tr.find('td').eq(3).text().trim() || '-';
+        // new index: 0=no,1=judul,2=nomor,3=tujuan,4=isi,5=gdrive,6=aksi
+        const judul = $tr.find('td').eq(1).text().trim() || '-';
+        const nomor = $tr.find('td').eq(2).text().trim() || '-';
+        const tujuan = $tr.find('td').eq(3).text().trim() || '-';
         const isiHtml = $tr.find('td').eq(4).html().trim() || '-';
-        const link = $tr.find('td').eq(5).text().trim() || '';
-        console.log('link',link)
+        const link = $tr.find('.sk-gdrive').text().trim() || '';
+
         $('#viewNomor').text(nomor);
         $('#viewTujuan').text(tujuan);
         $('#viewJudul').text(judul);
@@ -175,14 +183,12 @@ $(function () {
         } else {
             $('#viewGDrive').attr('href', '#').text('Tidak ada link').addClass('text-muted');
         }
-
         new bootstrap.Modal(document.getElementById('viewModal')).show();
     });
 
-    // EDIT — ambil kolom dengan td.eq
+    // EDIT
     $tbody.on('click', '.btn-edit', function () {
         const $tr = $(this).closest('tr');
-
         const id = $(this).data('id');
         if (!id) {
             Swal.fire('Error', 'ID tidak ditemukan untuk edit', 'error');
@@ -192,16 +198,17 @@ $(function () {
         $form.attr('action', '/spj/arsip_surat_keluar/' + id);
         $form.find('input[name="_method"]').val('PUT');
 
-        $('#nomorDokumen').val($tr.find('td').eq(1).text().trim());
-        $('#tujuan').val($tr.find('td').eq(2).text().trim());
-        $('#judul').val($tr.find('td').eq(3).text().trim());
+        $('#nomorDokumen').val($tr.find('td').eq(2).text().trim()).prop('readonly', true);
+        $('#judul').val($tr.find('td').eq(1).text().trim());
+        $('#tujuan').val($tr.find('td').eq(3).text().trim());
         const isiText = $tr.find('td').eq(4).text().trim();
         $('#isi').val(isiText === '-' ? '' : isiText);
-        $('#gdrive').val($tr.find('td').eq(5).text().trim());
+        $('#gdrive').val($tr.find('.sk-gdrive').text().trim());
 
         $('#formModalLabel').text('Edit Surat Keluar');
         new bootstrap.Modal(document.getElementById('formModal')).show();
     });
+
 
     // DELETE — ambil kolom dengan td.eq (untuk konfirmasi) & data-id untuk request
     $tbody.on('click', '.btn-delete', function () {
@@ -253,9 +260,9 @@ $(function () {
         const newIndex = $tbody.find('tr').length + 1;
         const $tr = $('<tr>').attr('data-id', d.id);
         $tr.append(`<td class="text-center">${newIndex}</td>`);
-        $tr.append(`<td class="sk-nomor">${escapeHtml(d.nomor_dokumen)}</td>`);
-        $tr.append(`<td class="sk-tujuan">${escapeHtml(d.tujuan)}</td>`);
         $tr.append(`<td class="sk-judul">${escapeHtml(d.judul_surat || '')}</td>`);
+        $tr.append(`<td class="sk-nomor">${escapeHtml(d.nomor_dokumen || '')}</td>`);
+        $tr.append(`<td class="sk-tujuan">${escapeHtml(d.tujuan)}</td>`);
         $tr.append(`<td class="sk-isi">${escapeHtml(d.isi ? d.isi.substring(0,200) : '-')}</td>`);
         $tr.append(`<td class="sk-gdrive d-none">${escapeHtml(d.link_gdrive || '')}</td>`);
         $tr.append(`<td class="text-center">
@@ -269,12 +276,13 @@ $(function () {
     function updateRow(d) {
         const $tr = $tbody.find('tr[data-id="' + d.id + '"]');
         if (!$tr.length) return;
-        $tr.find('td').eq(1).text(d.nomor_dokumen);
-        $tr.find('td').eq(2).text(d.tujuan);
-        $tr.find('td').eq(3).text(d.judul_surat || '');
+        $tr.find('td').eq(1).text(d.judul_surat || '');
+        $tr.find('td').eq(2).text(d.nomor_dokumen || '');
+        $tr.find('td').eq(3).text(d.tujuan || '');
         $tr.find('td').eq(4).text(d.isi ? d.isi.substring(0,200) : '-');
-        $tr.find('td').eq(5).text(d.link_gdrive || '');
+        $tr.find('.sk-gdrive').text(d.link_gdrive || '');
     }
+
 
     function reindexRows() {
         $tbody.find('tr').each(function (i) {

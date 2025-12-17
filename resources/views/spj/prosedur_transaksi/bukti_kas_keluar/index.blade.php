@@ -357,69 +357,127 @@
         --------------------------------------*/
         const form = document.getElementById('buktiForm');
 
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault(); // cegah submit biasa
 
-            const fd = new FormData(form);
-            const params = new URLSearchParams();
-
-            // COPY semua field ke QueryString untuk halaman print
-            for (const pair of fd.entries()) {
-                const [k, v] = pair;
-                params.append(k, v);
+            // disable tombol agar user tidak spam klik
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('disabled');
             }
 
-            // 1) Buka halaman print (new tab)
-            const printUrl = "{{ url('/spj/bukti_kas_keluar/print') }}?" + params.toString();
-            window.open(printUrl, "_blank");
+            const fd = new FormData(form);
 
-            // 2) Simpan via fetch POST
-            fetch(form.action, {
-                method: "POST",
-                headers: {
-                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-                    "X-Requested-With": "XMLHttpRequest",
-                    "Accept": "application/json"
-                },
-                body: fd
-            })
-            .then(async (res) => {
-                const contentType = res.headers.get('content-type') || '';
+            // buka tab kosong sekarang supaya browser tidak memblok popup.
+            // kita akan isi lokasinya setelah simpan sukses.
+            let printWindow = null;
+            try {
+                printWindow = window.open('about:blank', '_blank');
+            } catch (err) {
+                printWindow = null;
+            }
+
+            try {
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Accept": "application/json"
+                    },
+                    body: fd
+                });
+
+                // coba parse JSON, jika bukan JSON -> treat as error
+                const contentType = response.headers.get('content-type') || '';
                 if (contentType.indexOf('application/json') === -1) {
-                    const txt = await res.text();
-                    throw new Error("Unexpected response format: " + txt.slice(0, 300));
+                    const txt = await response.text();
+                    throw new Error("Unexpected response format: " + txt.slice(0, 400));
                 }
-                const json = await res.json();
-                return { ok: res.ok, json };
-            })
-            .then(({ ok, json }) => {
-                const isSuccess = (json && (json.success === true || json.status === 'success' || json.status === 'ok'));
-                if (isSuccess) {
-                    Swal.fire({
-                        icon: "success",
-                        title: "Berhasil!",
-                        text: json.message || "Data berhasil disimpan",
-                        confirmButtonText: "OK"
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
+
+                const result = await response.json();
+
+                // sukses? (menyamakan pola response sebelumnya)
+                const isSuccess = result && (result.success === true || result.status === 'success' || result.status === 'ok');
+
+                if (!isSuccess) {
+                    // tutup printWindow kalau dibuka
+                    if (printWindow && !printWindow.closed) printWindow.close();
+
                     Swal.fire({
                         icon: "error",
                         title: "Gagal!",
-                        text: (json && (json.message || json.error || json.status)) || "Terjadi kesalahan saat menyimpan data"
+                        text: (result && (result.message || result.error || result.status)) || "Terjadi kesalahan saat menyimpan data"
                     });
+                    return;
                 }
-            })
-            .catch(err => {
-                console.error("Submit error:", err);
+
+                // ambil id record yang baru dibuat
+                // backend Anda sebelumnya mengembalikan 'data' => $record
+                const created = result.data || {};
+                const newId = created.id || created.ID || createdIdFromResult(result);
+
+                if (!newId) {
+                    // jika id tidak ditemukan di payload, tutup window & beri info
+                    if (printWindow && !printWindow.closed) printWindow.close();
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Sukses disimpan, tapi ID tidak ditemukan",
+                        text: "Data berhasil disimpan tetapi server tidak mengembalikan ID. Coba refresh halaman."
+                    }).then(() => location.reload());
+                    return;
+                }
+
+                // build url print berdasarkan id (gunakan endpoint print yang benar)
+                const printBase = "{{ url('/spj/bukti_kas_keluar/print') }}";
+                const printUrl = printBase + '?id=' + encodeURIComponent(newId);
+
+                // jika printWindow null (browser blok popup), buka normal sekarang (tab dipicu programmatically)
+                if (!printWindow || printWindow.closed) {
+                    window.open(printUrl, '_blank');
+                } else {
+                    // arahkan tab kosong tadi ke print url
+                    printWindow.location.href = printUrl;
+                }
+
+                // tampilkan notifikasi sukses lalu reload saat OK
+                Swal.fire({
+                    icon: "success",
+                    title: "Berhasil!",
+                    text: result.message || "Data berhasil disimpan",
+                    confirmButtonText: "OK"
+                }).then(() => location.reload());
+
+            } catch (err) {
+                console.error('Error saat menyimpan & membuka print:', err);
+                if (printWindow && !printWindow.closed) printWindow.close();
+
                 Swal.fire({
                     icon: "error",
                     title: "Gagal!",
-                    text: "Terjadi error saat mengirim data! Cek console untuk detail."
+                    text: err.message || "Terjadi error saat mengirim data!"
                 });
-            });
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('disabled');
+                }
+            }
 
+            // helper: jika server mengembalikan id dengan struktur lain, coba terbaca
+            function createdIdFromResult(res) {
+                try {
+                    if (!res) return null;
+                    // common locations
+                    if (res.data && (res.data.id || res.data.ID)) return res.data.id || res.data.ID;
+                    if (res.id) return res.id;
+                    if (res.record && res.record.id) return res.record.id;
+                    return null;
+                } catch (e) {
+                    return null;
+                }
+            }
         });
 
     });

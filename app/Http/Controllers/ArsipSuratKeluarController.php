@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\ArsipSuratKeluar;
+use Carbon\Carbon;
 
 class ArsipSuratKeluarController extends Controller
 {
@@ -16,16 +17,28 @@ class ArsipSuratKeluarController extends Controller
     public function store(Request $request)
     {
         $rules = [
-            'nomor_dokumen' => 'required|string|max:255',
+            // nomor_dokumen tidak wajib di input create
             'tujuan'        => 'nullable|string|max:255',
-            'judul_surat'   => 'nullable|string|max:255',
+            'judul_surat'   => 'required|string|max:255',
             'isi'           => 'nullable|string',
             'link_gdrive'   => 'nullable|string',
         ];
 
         $validated = $request->validate($rules);
 
-        $surat = ArsipSuratKeluar::create($validated);
+        // generate nomor otomatis berdasarkan tahun saat ini
+        $now = Carbon::now();
+        $year = $now->year;
+        $month = $now->month;
+        // hitung jumlah surat pada tahun yang sama -> nomor = count + 1
+        $countThisYear = ArsipSuratKeluar::whereYear('created_at', $year)->count();
+        $no = $countThisYear + 1;
+        $monthRoman = $this->monthToRoman($month);
+        $nomorDokumen = "TU/{$no}/{$monthRoman}/{$year}";
+
+        $data = array_merge($validated, ['nomor_dokumen' => $nomorDokumen]);
+
+        $surat = ArsipSuratKeluar::create($data);
 
         if ($request->ajax()) {
             return response()->json([
@@ -41,9 +54,10 @@ class ArsipSuratKeluarController extends Controller
     public function update(Request $request, $id)
     {
         $rules = [
-            'nomor_dokumen' => 'required|string|max:255',
+            // nomor_dokumen optional saat update (jika ingin dipertahankan gunakan null)
+            'nomor_dokumen' => 'nullable|string|max:255',
             'tujuan'        => 'nullable|string|max:255',
-            'judul_surat'   => 'nullable|string|max:255',
+            'judul_surat'   => 'required|string|max:255',
             'isi'           => 'nullable|string',
             'link_gdrive'   => 'nullable|string',
         ];
@@ -59,6 +73,11 @@ class ArsipSuratKeluarController extends Controller
                 ], 404);
             }
             return back()->with('error', "Surat dengan ID $id tidak ditemukan");
+        }
+
+        // Jika nomor_dokumen tidak dikirim (null atau kosong) -> jangan overwrite
+        if (empty($validated['nomor_dokumen'])) {
+            unset($validated['nomor_dokumen']);
         }
 
         $surat->update($validated);
@@ -97,5 +116,15 @@ class ArsipSuratKeluarController extends Controller
         }
 
         return back()->with('success', 'Surat keluar berhasil dihapus!');
+    }
+
+    private function monthToRoman($month)
+    {
+        $map = [
+            1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV',
+            5 => 'V', 6 => 'VI', 7 => 'VII', 8 => 'VIII',
+            9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII'
+        ];
+        return $map[intval($month)] ?? (string)$month;
     }
 }

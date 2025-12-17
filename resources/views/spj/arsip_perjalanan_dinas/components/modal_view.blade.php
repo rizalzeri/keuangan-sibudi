@@ -1,4 +1,5 @@
-<!-- Modal View Perjalanan Dinas -->
+
+<!-- Modal View Perjalanan Dinas (yang Anda berikan, kami gunakan dan isi dinamis) -->
 <div class="modal fade" id="viewModalPD" tabindex="-1" aria-labelledby="viewModalPDLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -9,14 +10,14 @@
 
         <div class="modal-body">
           <dl class="row mb-0">
+            <dt class="col-sm-4">Kegiatan</dt>
+            <dd class="col-sm-8" id="viewPdKegiatan">-</dd>
+
             <dt class="col-sm-4">Nomor Dokumen</dt>
             <dd class="col-sm-8" id="viewPdNomor">-</dd>
 
             <dt class="col-sm-4">Tanggal</dt>
             <dd class="col-sm-8" id="viewPdTanggal">-</dd>
-
-            <dt class="col-sm-4">Kegiatan</dt>
-            <dd class="col-sm-8" id="viewPdKegiatan">-</dd>
 
             <dt class="col-sm-4">Tempat</dt>
             <dd class="col-sm-8" id="viewPdTempat">-</dd>
@@ -36,4 +37,4 @@
         </div>
       </div>
     </div>
-  </div>
+</div>

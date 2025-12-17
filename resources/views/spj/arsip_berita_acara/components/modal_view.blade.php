@@ -1,4 +1,3 @@
-<!-- Modal View Berita Acara -->
 <div class="modal fade" id="viewModalBA" tabindex="-1" aria-labelledby="viewModalBALabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -11,6 +10,9 @@
           <dl class="row mb-0">
             <dt class="col-sm-4">Judul</dt>
             <dd class="col-sm-8" id="viewJudulBA">-</dd>
+
+            <dt class="col-sm-4">Nomor Dokumen</dt>
+            <dd class="col-sm-8" id="viewNomorBA">-</dd>
 
             <dt class="col-sm-4">Tanggal</dt>
             <dd class="col-sm-8" id="viewTanggalBA">-</dd>

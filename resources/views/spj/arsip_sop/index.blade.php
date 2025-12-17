@@ -51,7 +51,6 @@
         </div>
     </div>
 </div>
-
 @include('spj.arsip_sop.components.modal_form')
 @include('spj.arsip_sop.components.modal_view')
 
@@ -74,6 +73,9 @@ $(function () {
         $form.attr('action', createAction);
         $('#rowIndexSop').val('');
         $('#formModalLabelSOP').text('Tambah SOP');
+        // pastikan field nomor disembunyikan dan placeholder untuk create
+        $('#sopNomorWrapper').addClass('d-none');
+        $('#sopNomor').val('');
     });
 
     // Open Add
@@ -83,6 +85,9 @@ $(function () {
         $form.attr('action', createAction);
         $('#rowIndexSop').val('');
         $('#formModalLabelSOP').text('Tambah SOP');
+        // hide nomor input saat create (nomor akan di-generate di server)
+        $('#sopNomorWrapper').addClass('d-none');
+        $('#sopNomor').val('');
     });
 
     // Submit via AJAX
@@ -92,9 +97,9 @@ $(function () {
         const methodOverride = ($form.find('input[name="_method"]').val() || 'POST').toUpperCase();
         const httpMethod = methodOverride === 'POST' ? 'POST' : methodOverride;
 
+        // Build payload. NOTE: nomor_dokumen tidak dikirim saat POST (server akan generate)
         const payload = {
             nama_sop: $('#sopNama').val().trim(),
-            nomor_dokumen: $('#sopNomor').val().trim(),
             ruang_lingkup: $('#sopRuang').val().trim(),
             status: $('#sopStatus').val(),
             link_gdrive: $('#sopGdrive').val().trim(),
@@ -102,11 +107,18 @@ $(function () {
             _method: methodOverride
         };
 
-        if (!payload.nama_sop || !payload.nomor_dokumen) {
-            Swal.fire('Kesalahan', 'Nama SOP dan Nomor Dokumen wajib diisi', 'error');
+        // Jika update (PUT), sertakan nomor jika ada (editing)
+        if (httpMethod !== 'POST') {
+            payload.nomor_dokumen = $('#sopNomor').val().trim();
+        }
+
+        // Validasi client-side: nama_sop wajib
+        if (!payload.nama_sop) {
+            Swal.fire('Kesalahan', 'Nama SOP wajib diisi', 'error');
             return;
         }
 
+        // Jika create, jangan kirim nomor (server akan generate)
         $.ajax({
             url: url,
             method: httpMethod,
@@ -177,7 +189,6 @@ $(function () {
         new bootstrap.Modal(document.getElementById('viewModalSOP')).show();
     });
 
-
     // EDIT
     $tbody.on('click', '.btn-edit', function () {
         const $tr = $(this).closest('tr');
@@ -198,18 +209,17 @@ $(function () {
         const nomor = tds.eq(2).text().trim();
         const ruang = tds.eq(3).text().trim();
         const statusText = tds.eq(4).find('.badge').text().trim();
-        const gdrive = tds.eq(5).find('.sop-gdrive').text().trim();
+        const gdrive = $tr.find('.sop-gdrive').text().trim();
 
         // set ke dalam form
         $('#sopNama').val(nama);
-        $('#sopNomor').val(nomor);
         $('#sopRuang').val(ruang);
-
-        $('#sopStatus').val(
-            (statusText === 'Berlaku') ? 'Berlaku' : 'Tidak Berlaku'
-        );
-
+        $('#sopStatus').val((statusText === 'Berlaku') ? 'Berlaku' : 'Tidak Berlaku');
         $('#sopGdrive').val(gdrive || '');
+
+        // tampilkan nomor di form saat edit (tapi tetap hidden)
+        $('#sopNomor').val(nomor || '');
+        $('#sopNomorWrapper').removeClass('d-none');
 
         // tampilkan modal
         $('#formModalLabelSOP').text('Edit SOP');
@@ -260,39 +270,38 @@ $(function () {
 
     // helpers
     function appendRow(d) {
-            const newIndex = $tbody.find('tr').length + 1;
-            const statusHtml = (d.status && d.status === 'Berlaku')
-                ? '<span class="badge bg-success">Berlaku</span>'
-                : '<span class="badge bg-secondary">Tidak Berlaku</span>';
+        const newIndex = $tbody.find('tr').length + 1;
+        const statusHtml = (d.status && d.status === 'Berlaku')
+            ? '<span class="badge bg-success">Berlaku</span>'
+            : '<span class="badge bg-secondary">Tidak Berlaku</span>';
 
-            const $tr = $('<tr>').attr('data-id', d.id);
+        const $tr = $('<tr>').attr('data-id', d.id);
 
-            $tr.append(`<td>${newIndex}</td>`);
-            $tr.append(`<td class="sop-nama">${escapeHtml(d.nama_sop)}</td>`);
-            $tr.append(`<td class="sop-nomor">${escapeHtml(d.nomor_dokumen)}</td>`);
-            $tr.append(`<td class="sop-ruang">${escapeHtml(d.ruang_lingkup || '-')}</td>`);
-            $tr.append(`<td class="sop-status">${statusHtml}</td>`);
+        $tr.append(`<td>${newIndex}</td>`);
+        $tr.append(`<td class="sop-nama">${escapeHtml(d.nama_sop)}</td>`);
+        $tr.append(`<td class="sop-nomor">${escapeHtml(d.nomor_dokumen || '')}</td>`);
+        $tr.append(`<td class="sop-ruang">${escapeHtml(d.ruang_lingkup || '-')}</td>`);
+        $tr.append(`<td class="sop-status">${statusHtml}</td>`);
 
-            // gdrive dipindah ke dalam kolom aksi (bukan kolom sendiri)
-            $tr.append(`
-                <td class="text-center">
-                    <span class="sop-gdrive d-none">${escapeHtml(d.link_gdrive || '')}</span>
-                    <button class="btn btn-sm btn-info btn-view" title="Lihat"><i class="bi bi-eye"></i></button>
-                    <button class="btn btn-sm btn-warning btn-edit" data-id="${d.id}" title="Edit"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-sm btn-danger btn-delete" data-id="${d.id}" title="Hapus"><i class="bi bi-trash"></i></button>
-                </td>
-            `);
+        // gdrive dipindah ke dalam kolom aksi (bukan kolom sendiri)
+        $tr.append(`
+            <td class="text-center">
+                <span class="sop-gdrive d-none">${escapeHtml(d.link_gdrive || '')}</span>
+                <button class="btn btn-sm btn-info btn-view" title="Lihat"><i class="bi bi-eye"></i></button>
+                <button class="btn btn-sm btn-warning btn-edit" data-id="${d.id}" title="Edit"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-danger btn-delete" data-id="${d.id}" title="Hapus"><i class="bi bi-trash"></i></button>
+            </td>
+        `);
 
-            $tbody.append($tr);
-        }
-
+        $tbody.append($tr);
+    }
 
     function updateRow(d) {
         const $tr = $tbody.find('tr[data-id="' + d.id + '"]');
         if (!$tr.length) return;
 
         $tr.find('.sop-nama').text(d.nama_sop);
-        $tr.find('.sop-nomor').text(d.nomor_dokumen);
+        $tr.find('.sop-nomor').text(d.nomor_dokumen || '');
         $tr.find('.sop-ruang').text(d.ruang_lingkup || '-');
 
         const statusHtml =
@@ -305,7 +314,6 @@ $(function () {
         // posisi baru gdrive
         $tr.find('.sop-gdrive').text(d.link_gdrive || '');
     }
-
 
     function reindexRows() {
         $tbody.find('tr').each(function (i) {

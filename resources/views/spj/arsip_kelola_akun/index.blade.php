@@ -25,7 +25,7 @@
                                 <td class="nama">{{ $p->nama }}</td>
                                 <td class="jabatan">{{ $p->jabatan }}</td>
                                 <td>
-                                    <button title="Edit" class="btn btn-sm btn-secondary btn-edit-personalisasi" data-id="{{ $p->id }}">
+                                    <button title="Edit" class="btn btn-sm btn-warning btn-edit-personalisasi" data-id="{{ $p->id }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <button title="Hapus" class="btn btn-sm btn-danger btn-delete-personalisasi" data-id="{{ $p->id }}">
@@ -62,7 +62,7 @@
                                 <td class="kategori">{{ $m->kategori }}</td>
                                 <td class="personalisasi_id">{{ optional($m->personalisasi)->nama }}</td>
                                 <td>
-                                    <button title="Edit" class="btn btn-sm btn-secondary btn-edit-mengetahui" data-id="{{ $m->id }}">
+                                    <button title="Edit" class="btn btn-sm btn-warning btn-edit-mengetahui" data-id="{{ $m->id }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <button title="Hapus" class="btn btn-sm btn-danger btn-delete-mengetahui" data-id="{{ $m->id }}">
@@ -99,7 +99,7 @@
                                 <td class="kategori">{{ $p->kategori }}</td>
                                 <td class="personalisasi_id">{{ optional($p->personalisasi)->nama }}</td>
                                 <td>
-                                    <button title="Edit" class="btn btn-sm btn-secondary btn-edit-persetujuan" data-id="{{ $p->id }}">
+                                    <button title="Edit" class="btn btn-sm btn-warning btn-edit-persetujuan" data-id="{{ $p->id }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <button title="Hapus" class="btn btn-sm btn-danger btn-delete-persetujuan" data-id="{{ $p->id }}">
@@ -136,7 +136,7 @@
                                 <td class="kategori">{{ $k->kategori }}</td>
                                 <td class="nominal">{{ number_format($k->nominal,2) }}</td>
                                 <td>
-                                    <button title="Edit" class="btn btn-sm btn-secondary btn-edit-klasifikasi" data-id="{{ $k->id }}">
+                                    <button title="Edit" class="btn btn-sm btn-warning btn-edit-klasifikasi" data-id="{{ $k->id }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <button title="Hapus" class="btn btn-sm btn-danger btn-delete-klasifikasi" data-id="{{ $k->id }}">

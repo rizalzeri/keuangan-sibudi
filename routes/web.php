@@ -545,11 +545,16 @@ Route::get('/spj/arsip_perjanjian_kerja', [ArsipPerjanjianKerjaController::class
 Route::post('/spj/arsip_perjanjian_kerja', [ArsipPerjanjianKerjaController::class, 'store'])->middleware(['auth','role_user:3']);
 Route::put('/spj/arsip_perjanjian_kerja/{id}', [ArsipPerjanjianKerjaController::class, 'update'])->middleware(['auth','role_user:3']);
 Route::delete('/spj/arsip_perjanjian_kerja/{id}', [ArsipPerjanjianKerjaController::class, 'destroy'])->middleware(['auth','role_user:3']);
+Route::post('/spj/arsip_perjanjian_kerja/{id}/complete',[ArsipPerjanjianKerjaController::class, 'complete'])->middleware(['auth', 'role_user:3']);
+
 
 Route::get('/spj/arsip_perjalanan_dinas', [ArsipPerjalananDinasController::class, 'index'])->middleware(['auth','role_user:3']);
 Route::post('/spj/arsip_perjalanan_dinas', [ArsipPerjalananDinasController::class, 'store'])->middleware(['auth','role_user:3']);
 Route::put('/spj/arsip_perjalanan_dinas/{id}', [ArsipPerjalananDinasController::class, 'update'])->middleware(['auth','role_user:3']);
-Route::delete('/spj/arsip_perjalanan_dinas/{id}', [ArsipPerjalananDinasController::class, 'destroy'])->middleware(['auth','role_user:3']);
+Route::delete('/spj/arsip_perjalanan_dinas/{id}',[ArsipPerjalananDinasController::class, 'destroy'])->middleware(['auth','role_user:3']);
+
+Route::get('/spj/arsip_perjalanan_dinas/{id}/generate-doc', [ArsipPerjalananDinasController::class, 'generateDoc'])->middleware(['auth','role_user:3']);
+Route::get('/spj/arsip_perjalanan_dinas/{id}', [ArsipPerjalananDinasController::class, 'show'])->middleware(['auth','role_user:3']);
 
 Route::get('/spj/arsip_notulen_rapat', [ArsipNotulenRapatController::class, 'index'])->middleware(['auth','role_user:3']);
 Route::post('/spj/arsip_notulen_rapat', [ArsipNotulenRapatController::class, 'store'])->middleware(['auth','role_user:3']);

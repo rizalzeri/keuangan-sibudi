@@ -11,9 +11,9 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <div class="mb-3">
-              <label for="nomorDokumen" class="form-label">Nomor Dokumen</label>
-              <input type="text" id="nomorDokumen" name="nomor_dokumen" class="form-control" required>
+            <div class="mb-3 d-none">
+                <label for="nomorDokumen" class="form-label">Nomor Dokumen</label>
+                <input type="text" id="nomorDokumen" name="nomor_dokumen" class="form-control" readonly placeholder="Nomor akan dibuat otomatis saat penyimpanan">
             </div>
             <div class="mb-3">
               <label for="tujuan" class="form-label">Tujuan</label>

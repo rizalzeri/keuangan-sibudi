@@ -1,4 +1,3 @@
-<!-- Modal Form SOP -->
 <div class="modal fade" id="formModalSOP" tabindex="-1" aria-labelledby="formModalLabelSOP" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <form id="sopForm" action="{{ url('/spj/arsip_sop') }}" method="POST" class="modal-content">
@@ -15,9 +14,10 @@
             <input type="text" id="sopNama" name="nama_sop" class="form-control" required>
           </div>
 
-          <div class="mb-3">
+          <!-- Nomor disembunyikan di UI pada create; saat edit akan diisi dan wrapper di-removed d-none -->
+          <div class="mb-3 d-none" id="sopNomorWrapper">
             <label for="sopNomor" class="form-label">Nomor Dokumen <span class="text-danger">*</span></label>
-            <input type="text" id="sopNomor" name="nomor_dokumen" class="form-control" required>
+            <input type="text" id="sopNomor" name="nomor_dokumen" class="form-control">
           </div>
 
           <div class="mb-3">

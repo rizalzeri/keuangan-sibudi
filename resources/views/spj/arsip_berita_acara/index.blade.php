@@ -14,11 +14,13 @@
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
+                <!-- urutan: No | Judul | Nomor Dokumen | Tanggal | Deskripsi | Aksi -->
                 <table id="tblBa" class="table datatable">
                     <thead class="table-light">
                         <tr>
                             <th style="width:60px">No</th>
                             <th>Judul</th>
+                            <th>Nomor Dokumen</th>
                             <th>Tanggal</th>
                             <th>Deskripsi</th>
                             <th style="width:160px">Aksi</th>
@@ -29,6 +31,7 @@
                             <tr data-id="{{ $it->id }}">
                                 <td>{{ $i + 1 }}</td>
                                 <td class="ba-judul">{{ $it->judul_berita_acara }}</td>
+                                <td class="ba-nomor">{{ $it->nomor_dokumen }}</td>
                                 <td class="ba-tanggal">{{ $it->tanggal_peristiwa ? $it->tanggal_peristiwa->format('Y-m-d') : '-' }}</td>
                                 <td class="ba-deskripsi">{!! nl2br(e(Str::limit($it->deskripsi, 200))) !!}</td>
                                 <td class="">
@@ -45,7 +48,6 @@
         </div>
     </div>
 </div>
-
 @include('spj.arsip_berita_acara.components.modal_form')
 @include('spj.arsip_berita_acara.components.modal_view')
 
@@ -69,6 +71,9 @@ $(function () {
         $form.attr('action', createAction);
         $('#rowIndexBa').val('');
         $('#formModalLabelBA').text('Tambah Berita Acara');
+        // hide nomor wrapper on close
+        $('#baNomorWrapper').addClass('d-none');
+        $('#baNomor').val('');
     });
 
     // Open Add
@@ -78,6 +83,9 @@ $(function () {
         $form.attr('action', createAction);
         $('#rowIndexBa').val('');
         $('#formModalLabelBA').text('Tambah Berita Acara');
+        // hide nomor input saat create (nomor akan dibuat otomatis di server)
+        $('#baNomorWrapper').addClass('d-none');
+        $('#baNomor').val('');
     });
 
     // Submit via AJAX
@@ -95,6 +103,11 @@ $(function () {
             _token: $('meta[name="csrf-token"]').attr('content'),
             _method: methodOverride
         };
+
+        // include nomor only when editing (PUT)
+        if (httpMethod !== 'POST') {
+            payload.nomor_dokumen = $('#baNomor').val().trim();
+        }
 
         if (!payload.judul_berita_acara || !payload.tanggal_peristiwa) {
             Swal.fire('Kesalahan', 'Judul dan Tanggal wajib diisi', 'error');
@@ -145,11 +158,13 @@ $(function () {
         const tds = $tr.find('td');
 
         const judul = tds.eq(1).text().trim() || '-';
-        const tanggal = tds.eq(2).text().trim() || '-';
-        const deskripsiHtml = tds.eq(3).html().trim() || '-';
-        const gdrive = tds.eq(4).find('.ba-gdrive').text().trim() || '';
+        const nomor = tds.eq(2).text().trim() || '-';
+        const tanggal = tds.eq(3).text().trim() || '-';
+        const deskripsiHtml = tds.eq(4).html().trim() || '-';
+        const gdrive = tds.eq(5).find('.ba-gdrive').text().trim() || '';
 
         $('#viewJudulBA').text(judul);
+        $('#viewNomorBA').text(nomor);
         $('#viewTanggalBA').text(tanggal);
         $('#viewDeskripsiBA').html(deskripsiHtml === '' ? '-' : deskripsiHtml);
 
@@ -177,15 +192,20 @@ $(function () {
         $form.find('input[name="_method"]').val('PUT');
 
         const judul = tds.eq(1).text().trim();
-        const tanggal = tds.eq(2).text().trim();
+        const nomor = tds.eq(2).text().trim();
+        const tanggal = tds.eq(3).text().trim();
         // deskripsi in td might contain <br>, so use .text()
-        const deskripsi = tds.eq(3).text().trim();
-        const gdrive = tds.eq(4).find('.ba-gdrive').text().trim();
+        const deskripsi = tds.eq(4).text().trim();
+        const gdrive = tds.eq(5).find('.ba-gdrive').text().trim();
 
         $('#baJudul').val(judul);
         $('#baTanggal').val(tanggal);
         $('#baDeskripsi').val(deskripsi);
         $('#baGdrive').val(gdrive || '');
+
+        // tampilkan nomor di form saat edit (tapi tetap hidden class removed so visible in form)
+        $('#baNomor').val(nomor || '');
+        $('#baNomorWrapper').removeClass('d-none');
 
         $('#formModalLabelBA').text('Edit Berita Acara');
         new bootstrap.Modal(document.getElementById('formModalBA')).show();
@@ -240,6 +260,7 @@ $(function () {
 
         $tr.append(`<td class="">${newIndex}</td>`);
         $tr.append(`<td class="ba-judul">${escapeHtml(d.judul_berita_acara || '')}</td>`);
+        $tr.append(`<td class="ba-nomor">${escapeHtml(d.nomor_dokumen || '')}</td>`);
         $tr.append(`<td class="ba-tanggal">${escapeHtml(d.tanggal_peristiwa || '')}</td>`);
         $tr.append(`<td class="ba-deskripsi">${escapeHtml(d.deskripsi ? d.deskripsi.substring(0,200) : '-')}</td>`);
         $tr.append(`
@@ -259,8 +280,9 @@ $(function () {
         if (!$tr.length) return;
 
         $tr.find('td').eq(1).text(d.judul_berita_acara || '');
-        $tr.find('td').eq(2).text(d.tanggal_peristiwa || '');
-        $tr.find('td').eq(3).text(d.deskripsi ? d.deskripsi.substring(0,200) : '-');
+        $tr.find('td').eq(2).text(d.nomor_dokumen || '');
+        $tr.find('td').eq(3).text(d.tanggal_peristiwa || '');
+        $tr.find('td').eq(4).text(d.deskripsi ? d.deskripsi.substring(0,200) : '-');
         $tr.find('.ba-gdrive').text(d.link_gdrive || '');
     }
 

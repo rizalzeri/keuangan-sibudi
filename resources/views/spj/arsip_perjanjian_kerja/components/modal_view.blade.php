@@ -9,6 +9,9 @@
 
         <div class="modal-body">
           <dl class="row mb-0">
+            <dt class="col-sm-4">Nama Kerjasama</dt>
+            <dd class="col-sm-8" id="viewPerjNama">-</dd>
+
             <dt class="col-sm-4">Nomor Dokumen</dt>
             <dd class="col-sm-8" id="viewPerjNomor">-</dd>
 

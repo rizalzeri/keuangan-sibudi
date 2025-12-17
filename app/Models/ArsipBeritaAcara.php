@@ -10,6 +10,7 @@ class ArsipBeritaAcara extends Model
 
     protected $fillable = [
         'judul_berita_acara',
+        'nomor_dokumen',
         'tanggal_peristiwa',
         'deskripsi',
         'link_gdrive',

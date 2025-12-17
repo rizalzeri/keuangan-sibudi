@@ -1,3 +1,4 @@
+
 <!-- Modal Form Perjanjian Kerja -->
 <div class="modal fade" id="formModalPerj" tabindex="-1" aria-labelledby="formModalLabelPerj" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -11,9 +12,17 @@
         </div>
 
         <div class="modal-body">
+          <!-- Nama Kerjasama (baru) -->
           <div class="mb-3">
-            <label for="perjNomor" class="form-label">Nomor Dokumen <span class="text-danger">*</span></label>
-            <input type="text" id="perjNomor" name="nomor_dokumen" class="form-control" required>
+            <label for="perjNama" class="form-label">Nama Kerjasama <span class="text-danger">*</span></label>
+            <input type="text" id="perjNama" name="nama_kerjasama" class="form-control" required>
+          </div>
+
+          <!-- Nomor disembunyikan di UI pada create; saat edit akan ditampilkan -->
+          <div class="mb-3 d-none" id="perjNomorWrapper">
+            <label for="perjNomor" class="form-label">Nomor Dokumen</label>
+            <input type="text" id="perjNomor" name="nomor_dokumen" class="form-control">
+            <small class="text-muted">Nomor akan digenerate otomatis saat create: PKS/{no}/{BULAN_ROMAWI}/{TAHUN}</small>
           </div>
 
           <div class="mb-3">
@@ -31,9 +40,13 @@
             <textarea id="perjDeskripsi" name="deskripsi" class="form-control" rows="4"></textarea>
           </div>
 
-          <div class="mb-3">
+          <div class="mb-3 d-none" id="perjDurasiWrapper">
             <label for="perjDurasi" class="form-label">Durasi Kerjasama</label>
-            <input type="text" id="perjDurasi" name="durasi" class="form-control" placeholder="Contoh: 1 Tahun">
+            <select id="perjDurasi" name="durasi" class="form-select">
+              <option value="Berjalan">Berjalan</option>
+              <option value="Selesai">Selesai</option>
+            </select>
+            <small class="text-muted">Gunakan dropdown untuk mengubah status durasi (hanya tersedia saat edit).</small>
           </div>
 
           <div class="mb-3">

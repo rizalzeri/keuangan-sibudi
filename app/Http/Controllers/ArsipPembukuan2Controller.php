@@ -62,16 +62,7 @@ class ArsipPembukuan2Controller extends Controller
                 ->orderBy('id', 'asc')
                 ->get();
 
-            // nomor urut per jenis per tahun (1..n)
-            $seq = 0;
             foreach ($collection as $rec) {
-                $seq++;
-                $seqStr = str_pad($seq, 3, '0', STR_PAD_LEFT);
-                $bulan = (int) $rec->tanggal_transaksi->format('n'); // 1..12
-                $roman = $this->monthToRoman($bulan);
-                $tahun = $rec->tanggal_transaksi->format('Y');
-
-                $nomorDokumen = sprintf('%s/%s/%s/%s', $abbr, $seqStr, $roman, $tahun);
 
                 // format bukti dukung: dokumen_pendukung adalah JSON array (atau null)
                 $dokArr = $rec->dokumen_pendukung ?? null;
@@ -80,8 +71,7 @@ class ArsipPembukuan2Controller extends Controller
                 $rows[] = [
                     'id' => $rec->id,
                     'transaksi' => $rec->nama_transaksi,
-                    'nomor' => $nomorDokumen,
-                    // tambahkan tanggal mentah & tampilan:
+                    'nomor' => $rec->nomor_dokumen,
                     'tanggal' => $rec->tanggal_transaksi->format('Y-m-d'),
                     'tanggal_display' => $rec->tanggal_transaksi->format('d-m-Y'),
                     'jenis' => $jenis,
@@ -160,16 +150,7 @@ class ArsipPembukuan2Controller extends Controller
                 ->orderBy('id', 'asc')
                 ->get();
 
-            // nomor urut per jenis per tahun
-            $seq = 0;
             foreach ($collection as $rec) {
-                $seq++;
-                $seqStr = str_pad($seq, 3, '0', STR_PAD_LEFT);
-                $bulan = (int) $rec->tanggal_transaksi->format('n');
-                $roman = $this->monthToRoman($bulan);
-                $tahun = $rec->tanggal_transaksi->format('Y');
-
-                $nomorDokumen = sprintf('%s/%s/%s/%s', $abbr, $seqStr, $roman, $tahun);
 
                 // dokumen pendukung -> format string (Kwitansi, Nota)
                 $dokArr = $rec->dokumen_pendukung ?? null;
@@ -178,10 +159,10 @@ class ArsipPembukuan2Controller extends Controller
                 $rows[] = [
                     'id' => $rec->id,
                     'transaksi' => $rec->nama_transaksi,
-                    'nomor' => $nomorDokumen,
+                    'nomor' => $rec->nomor_dokumen,
                     'jenis' => $jenis,
                     'bukti' => $buktiDukung,
-                    'tautan' => '', // kosong sesuai permintaan
+                    'tautan' => $rec->link_gdrive,
                 ];
             }
         }

@@ -9,6 +9,7 @@ class ArsipPerjanjianKerja extends Model
     protected $table = 'arsip_perjanjian_kerja';
 
     protected $fillable = [
+        'nama_kerjasama',
         'nomor_dokumen',
         'pihak',
         'bentuk_kerja_sama',

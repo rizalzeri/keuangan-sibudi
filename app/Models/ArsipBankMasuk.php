@@ -18,6 +18,7 @@ class ArsipBankMasuk extends Model
     protected $fillable = [
         'nama_transaksi',
         'tanggal_transaksi',
+        'nomor_dokumen',
         'sumber',
         'nominal',
         'penerima',

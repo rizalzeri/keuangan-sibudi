@@ -92,7 +92,25 @@
 <body>
 
     <button id="downloadBtn">Download PDF</button>
-
+    @php
+        if (isset($record)) {
+            $tanggal = optional($record->tanggal_transaksi)->format('Y-m-d') ?? date('Y-m-d');
+            $nama_transaksi = $record->nama_transaksi ?? '........';
+            $nomor_dokumen = $record->nomor_dokumen ?? '........';
+            $tujuan = $record->tujuan ?? '........';
+            $nominal = $record->nominal ?? 0;
+            $penerima = $record->penerima ?? '........';
+            $mengetahui = $record->mengetahui ?? '........';
+        } else {
+            $tanggal = $data['tanggal'] ?? $data['tanggal_display'] ?? date('Y-m-d');
+            $nama_transaksi = $data['transaksi'] ?? $data['nama_transaksi'] ?? '........';
+            $nomor_dokumen = $data['nomor_dokumen'] ?? $data['nomor_dokumen'] ?? '........';
+            $tujuan = $data['tujuan'] ?? '........';
+            $nominal = $data['nominal'] ?? 0;
+            $penerima = $data['penerima'] ?? '........';
+            $mengetahui = $data['mengetahui'] ?? '........';
+        }
+    @endphp
     <div class="page" id="receipt">
         <div class="header-left">
             <b>BUMDESA</b><br>
@@ -101,20 +119,10 @@
         </div>
 
         <div class="header-right">
-            Nomor<br>
-            <span style="text-decoration: underline dotted;">.....................</span>
+            <span style="text-decoration: underline dotted;">Nomor {{ $nomor_dokumen }}</span>
         </div>
 
         <div class="title">BUKTI BANK KELUAR</div>
-
-        @php
-            $tanggal = $data['tanggal'] ?? date('Y-m-d');
-            $nama_transaksi = $data['nama_transaksi'] ?? '........';
-            $tujuan = $data['tujuan'] ?? '........';
-            $nominal = $data['nominal'] ?? '0';
-            $penerima = $data['penerima'] ?? '........';
-            $mengetahui = $data['mengetahui'] ?? '........';
-        @endphp
 
         <div class="content">
             <div class="line-row">
