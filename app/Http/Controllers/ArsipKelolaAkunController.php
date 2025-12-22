@@ -12,12 +12,15 @@ class ArsipKelolaAkunController extends Controller
 {
     public function index()
     {
+        // Semua personalisasi (untuk dropdown)
         $personalisasi = ArsipPersonalisasi::orderBy('id')->get();
-        $mengetahui = ArsipOtorisasiMengetahui::with('personalisasi')->orderBy('id')->get();
-        $persetujuan = ArsipOtorisasiPersetujuan::with('personalisasi')->orderBy('id')->get();
-        $klasifikasi = ArsipKlasifikasiTransaksi::orderBy('id')->get();
 
-        return view('spj.arsip_kelola_akun.index', compact('personalisasi','mengetahui','persetujuan','klasifikasi'));
+        // Klasifikasi (dengan relasi otorisasi untuk menampilkan nama personalisasi)
+        $klasifikasi = ArsipKlasifikasiTransaksi::with(['mengetahui','persetujuan'])
+            ->orderBy('id')
+            ->get();
+
+        return view('spj.arsip_kelola_akun.index', compact('personalisasi','klasifikasi'));
     }
 
     // ---------------- Personalisasi CRUD ----------------
@@ -51,7 +54,8 @@ class ArsipKelolaAkunController extends Controller
         return response()->json(['success' => true]);
     }
 
-    // ---------------- Mengetahui CRUD ----------------
+    // ---------------- Mengetahui / Persetujuan (CRUD tetap ada jika perlu) ----------------
+    // (kamu bisa tetap pakai endpoint ini, tapi UI sekarang menggunakan personalisasi langsung)
     public function storeMengetahui(Request $request)
     {
         $data = $request->validate([
@@ -82,7 +86,6 @@ class ArsipKelolaAkunController extends Controller
         return response()->json(['success' => true]);
     }
 
-    // ---------------- Persetujuan CRUD ----------------
     public function storePersetujuan(Request $request)
     {
         $data = $request->validate([
@@ -119,9 +122,39 @@ class ArsipKelolaAkunController extends Controller
         $data = $request->validate([
             'kategori' => 'nullable|string|max:255',
             'nominal' => 'required|numeric',
+            // these are personalisasi ids chosen from dropdown
+            'mengetahui_personalisasi_id' => 'nullable|exists:arsip_personalisasi,id',
+            'persetujuan_personalisasi_id' => 'nullable|exists:arsip_personalisasi,id',
         ]);
 
-        $item = ArsipKlasifikasiTransaksi::create($data);
+        // buat / reuse Ot. Mengetahui
+        $mengetahuiId = null;
+        if (!empty($data['mengetahui_personalisasi_id'])) {
+            $men = ArsipOtorisasiMengetahui::firstOrCreate(
+                ['arsip_personalisasi_id' => $data['mengetahui_personalisasi_id']],
+                ['kategori' => null] // atau set kategori khusus jika mau
+            );
+            $mengetahuiId = $men->id;
+        }
+
+        // buat / reuse Ot. Persetujuan
+        $persetujuanId = null;
+        if (!empty($data['persetujuan_personalisasi_id'])) {
+            $p = ArsipOtorisasiPersetujuan::firstOrCreate(
+                ['arsip_personalisasi_id' => $data['persetujuan_personalisasi_id']],
+                ['kategori' => null]
+            );
+            $persetujuanId = $p->id;
+        }
+
+        // simpan klasifikasi, simpan FK ke otorisasi yang telah dibuat/diambil
+        $item = ArsipKlasifikasiTransaksi::create([
+            'kategori' => $data['kategori'] ?? null,
+            'nominal' => $data['nominal'],
+            'arsip_otorisasi_mengetahui_id' => $mengetahuiId,
+            'arsip_otorisasi_persetujuan_id' => $persetujuanId,
+        ]);
+
         return response()->json(['success' => true, 'data' => $item]);
     }
 
@@ -130,10 +163,43 @@ class ArsipKelolaAkunController extends Controller
         $data = $request->validate([
             'kategori' => 'nullable|string|max:255',
             'nominal' => 'required|numeric',
+            'mengetahui_personalisasi_id' => 'nullable|exists:arsip_personalisasi,id',
+            'persetujuan_personalisasi_id' => 'nullable|exists:arsip_personalisasi,id',
         ]);
 
         $item = ArsipKlasifikasiTransaksi::findOrFail($id);
-        $item->update($data);
+
+        // process mengetahui
+        $mengetahuiId = $item->arsip_otorisasi_mengetahui_id;
+        if (!empty($data['mengetahui_personalisasi_id'])) {
+            $men = ArsipOtorisasiMengetahui::firstOrCreate(
+                ['arsip_personalisasi_id' => $data['mengetahui_personalisasi_id']],
+                ['kategori' => null]
+            );
+            $mengetahuiId = $men->id;
+        } else {
+            $mengetahuiId = null;
+        }
+
+        // process persetujuan
+        $persetujuanId = $item->arsip_otorisasi_persetujuan_id;
+        if (!empty($data['persetujuan_personalisasi_id'])) {
+            $p = ArsipOtorisasiPersetujuan::firstOrCreate(
+                ['arsip_personalisasi_id' => $data['persetujuan_personalisasi_id']],
+                ['kategori' => null]
+            );
+            $persetujuanId = $p->id;
+        } else {
+            $persetujuanId = null;
+        }
+
+        $item->update([
+            'kategori' => $data['kategori'] ?? null,
+            'nominal' => $data['nominal'],
+            'arsip_otorisasi_mengetahui_id' => $mengetahuiId,
+            'arsip_otorisasi_persetujuan_id' => $persetujuanId,
+        ]);
+
         return response()->json(['success' => true, 'data' => $item]);
     }
 
@@ -144,55 +210,46 @@ class ArsipKelolaAkunController extends Controller
         return response()->json(['success' => true]);
     }
 
+    // --- classifyByNominal tetap jika masih diperlukan ---
     public function classifyByNominal(Request $request)
     {
         $nominal = (int) $request->query('nominal', 0);
-
-        // Ambil semua klasifikasi, urut ascending berdasarkan nominal
         $klasList = ArsipKlasifikasiTransaksi::orderBy('nominal', 'asc')->get();
 
         if ($klasList->isEmpty()) {
             return response()->json(['success' => false, 'message' => 'Belum ada data klasifikasi'], 404);
         }
 
-        // Cari baris pertama yang nominal >= input; jika tidak ditemukan, pilih baris terakhir (max)
         $selected = $klasList->first(function($k) use ($nominal) {
             return $nominal <= (float) $k->nominal;
         });
 
-        if (!$selected) {
-            $selected = $klasList->last();
-        }
+        if (!$selected) $selected = $klasList->last();
 
-        // --- rekomendasi mengetahui & persetujuan (dari FK di tabel klasifikasi) ---
         $recommended_mengetahui = null;
         $recommended_persetujuan = null;
 
         if (!empty($selected->arsip_otorisasi_mengetahui_id)) {
             $m = ArsipOtorisasiMengetahui::with('personalisasi')->find($selected->arsip_otorisasi_mengetahui_id);
-            if ($m) {
-                $recommended_mengetahui = [
-                    'id' => $m->id,
-                    'personalisasi_id' => $m->arsip_personalisasi_id,
-                    'nama' => optional($m->personalisasi)->nama,
-                    'jabatan' => optional($m->personalisasi)->jabatan,
-                ];
-            }
+            if ($m) $recommended_mengetahui = [
+                'id' => $m->id,
+                'personalisasi_id' => $m->arsip_personalisasi_id,
+                'nama' => optional($m->personalisasi)->nama,
+                'jabatan' => optional($m->personalisasi)->jabatan,
+            ];
         }
 
         if (!empty($selected->arsip_otorisasi_persetujuan_id)) {
             $p = ArsipOtorisasiPersetujuan::with('personalisasi')->find($selected->arsip_otorisasi_persetujuan_id);
-            if ($p) {
-                $recommended_persetujuan = [
-                    'id' => $p->id,
-                    'personalisasi_id' => $p->arsip_personalisasi_id,
-                    'nama' => optional($p->personalisasi)->nama,
-                    'jabatan' => optional($p->personalisasi)->jabatan,
-                ];
-            }
+            if ($p) $recommended_persetujuan = [
+                'id' => $p->id,
+                'personalisasi_id' => $p->arsip_personalisasi_id,
+                'nama' => optional($p->personalisasi)->nama,
+                'jabatan' => optional($p->personalisasi)->jabatan,
+            ];
         }
 
-        // --- kumpulkan semua opsi untuk dropdown (so user bisa memilih alternatif) ---
+        // options untuk dropdown (sekarang tidak dipakai karena kita gunakan personalisasi)
         $mengetahui_options = ArsipOtorisasiMengetahui::with('personalisasi')->get()->map(function($m) {
             return [
                 'otorisasi_id' => $m->id,
@@ -230,5 +287,4 @@ class ArsipKelolaAkunController extends Controller
             ]
         ]);
     }
-
 }

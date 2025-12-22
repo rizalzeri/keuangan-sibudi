@@ -2,6 +2,47 @@
 
 @section('container')
 <meta name="csrf-token" content="{{ csrf_token() }}">
+@php
+    // $record mungkin null (create) atau App\Models\ArsipKasMasuk instance (edit)
+    $isEdit = isset($record) && $record;
+
+    /**
+     * Normalize dokumen pendukung:
+     */
+    function normalizeDokumenPendukung($val) {
+        if (is_array($val)) return array_values($val);
+        if ($val === null || $val === '') return [];
+        if (is_string($val)) {
+            $decoded = json_decode($val, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) return array_values($decoded);
+            $trim = trim($val);
+            if ($trim === '') return [];
+            if (strpos($trim, ',') !== false) {
+                $parts = array_map('trim', explode(',', $trim));
+                return array_values(array_filter($parts, function($x){ return $x !== ''; }));
+            }
+            // If JSON-like but already array-ish, return single-item
+            return [$trim];
+        }
+        return (array) $val;
+    }
+
+    // prepare dokumen pendukung
+    $oldDok = old('dokumen_pendukung');
+    if ($oldDok !== null) {
+        $dokSel = normalizeDokumenPendukung($oldDok);
+    } elseif ($isEdit && isset($record->dokumen_pendukung)) {
+        $dokSel = normalizeDokumenPendukung($record->dokumen_pendukung);
+    } else {
+        $dokSel = [];
+    }
+
+    // initial values for JS
+    $initialMenyetujui = $isEdit ? ($record->menyetujui ?? '') : '';
+    $initialMengetahui = $isEdit ? ($record->mengetahui ?? '') : '';
+    $initialNominal = $isEdit ? ($record->nominal ?? '') : old('nominal', '');
+@endphp
+
 <style>
     .row-flex {
         display: flex;
@@ -22,18 +63,24 @@
 
 <div class="container-fluid py-3">
     <div class="d-flex align-items-center justify-content-between mb-3">
-        <h4 class="mb-0">Buat Bukti Bank Masuk</h4>
+        <h4 class="mb-0">{{ $isEdit ? 'Edit Bukti Bank Masuk' : 'Buat Bukti Bank Masuk' }}</h4>
     </div>
     <div class="card shadow-sm">
         <br>
 
-        <form id="buktiForm" action="{{ url('/spj/bukti_bank_masuk') }}" method="POST" class="card-body">
+        <form id="buktiForm"
+              action="{{ $isEdit ? url('/spj/bukti_bank_masuk/'.$record->id) : url('/spj/bukti_bank_masuk') }}"
+              method="POST" class="card-body">
             @csrf
+            @if($isEdit)
+                @method('PUT')
+            @endif
+            <input type="hidden" name="return" value="{{ request()->query('return', '/spj/arsip_pembukuan_1') }}">
             <div class="row-flex">
                 <label for="tanggal">Tanggal</label>
                 <div class="input-wrap">
-                    <input type="text" id="tanggal" name="tanggal" class="form-control"
-                        value="{{ date('Y-m-d') }}" required>
+                    <input type="date" id="tanggal" name="tanggal" class="form-control"
+                        value="{{ old('tanggal', $isEdit ? ($record->tanggal_transaksi ? $record->tanggal_transaksi->format('Y-m-d') : '') : date('Y-m-d')) }}" required>
                 </div>
             </div>
 
@@ -41,7 +88,7 @@
                 <label for="nama_transaksi">Nama Transaksi</label>
                 <div class="input-wrap">
                     <input type="text" id="nama_transaksi" name="nama_transaksi"
-                        class="form-control" placeholder="Contoh: Setoran modal, Pembayaran ..." required>
+                        class="form-control" value="{{ old('nama_transaksi', $isEdit ? $record->nama_transaksi : '') }}" required>
                 </div>
             </div>
 
@@ -49,51 +96,62 @@
                 <label for="sumber">Sumber</label>
                 <div class="input-wrap">
                     <input type="text" id="sumber" name="sumber" class="form-control"
-                        placeholder="Contoh: bank, Bank, Donatur">
+                           value="{{ old('sumber', $isEdit ? $record->sumber : '') }}">
                 </div>
             </div>
 
             <div class="row-flex">
                 <label for="nominal_display">Nominal</label>
                 <div class="input-wrap">
+                    {{-- tampilkan dalam format Rp. jika ada nominal awal --}}
                     <input type="text" id="nominal_display" class="form-control"
-                        placeholder="Rp.0" autocomplete="off" inputmode="numeric">
-                    <input type="hidden" id="nominal" name="nominal">
+                        placeholder="Rp.0" autocomplete="off" inputmode="numeric"
+                        value="{{ old('nominal') ? 'Rp.'.number_format(old('nominal'),0,',','.') : ($initialNominal ? 'Rp.'.number_format($initialNominal,0,',','.') : '') }}">
+                    <input type="hidden" id="nominal" name="nominal" value="{{ old('nominal', $initialNominal) }}">
                 </div>
             </div>
 
             <div class="row-flex">
                 <label for="penerima">Penerima</label>
                 <div class="input-wrap">
-                    <input type="text" id="penerima" name="penerima" class="form-control">
+                    <input type="text" id="penerima" name="penerima" class="form-control"
+                           value="{{ old('penerima', $isEdit ? $record->penerima : '') }}">
                 </div>
             </div>
 
-            <!-- MENYETUJUI -> dropdown (disabled awalnya) -->
+            <!-- MENYETUJUI -> select -->
             <div class="row-flex">
                 <label for="menyetujui_select">Menyetujui</label>
                 <div class="input-wrap">
-                    <select id="menyetujui_select" class="form-control" disabled>
+                    <select id="menyetujui_select" name="menyetujui_select" class="form-control">
                         <option value="">-- Pilih Menyetujui --</option>
+                        {{-- Jika edit & ada nama tersimpan, tampilkan sebagai pilihan pertama (selected) --}}
+                        @if($initialMenyetujui)
+                            <option value="{{ $initialMenyetujui }}" selected>{{ $initialMenyetujui }}</option>
+                        @endif
+                        {{-- contoh opsi tambahan (opsional) --}}
+                        <option value="Nama A" {{ old('menyetujui', $initialMenyetujui) == 'Nama A' ? 'selected' : '' }}>Nama A</option>
+                        <option value="Nama B" {{ old('menyetujui', $initialMenyetujui) == 'Nama B' ? 'selected' : '' }}>Nama B</option>
                     </select>
-
-                    <!-- Hidden: hanya nama yang akan disimpan -->
-                    <input type="hidden" id="menyetujui" name="menyetujui" value="">
-                    <!-- optional id (tetap ada, dikosongkan sekarang) -->
-                    <input type="hidden" id="menyetujui_id" name="menyetujui_id" value="">
+                    <input type="hidden" id="menyetujui" name="menyetujui" value="{{ old('menyetujui', $initialMenyetujui) }}">
+                    <input type="hidden" id="menyetujui_id" name="menyetujui_id" value="{{ old('menyetujui_id', $isEdit ? ($record->menyetujui_id ?? '') : '') }}">
                 </div>
             </div>
 
-            <!-- MENGETAHUI -> dropdown (disabled awalnya) -->
+            <!-- MENGETAHUI -> select -->
             <div class="row-flex">
                 <label for="mengetahui_select">Mengetahui</label>
                 <div class="input-wrap">
-                    <select id="mengetahui_select" class="form-control" disabled>
+                    <select id="mengetahui_select" name="mengetahui_select" class="form-control">
                         <option value="">-- Pilih Mengetahui --</option>
+                        @if($initialMengetahui)
+                            <option value="{{ $initialMengetahui }}" selected>{{ $initialMengetahui }}</option>
+                        @endif
+                        <option value="Nama X" {{ old('mengetahui', $initialMengetahui) == 'Nama X' ? 'selected' : '' }}>Nama X</option>
+                        <option value="Nama Y" {{ old('mengetahui', $initialMengetahui) == 'Nama Y' ? 'selected' : '' }}>Nama Y</option>
                     </select>
-
-                    <input type="hidden" id="mengetahui" name="mengetahui" value="">
-                    <input type="hidden" id="mengetahui_id" name="mengetahui_id" value="">
+                    <input type="hidden" id="mengetahui" name="mengetahui" value="{{ old('mengetahui', $initialMengetahui) }}">
+                    <input type="hidden" id="mengetahui_id" name="mengetahui_id" value="{{ old('mengetahui_id', $isEdit ? ($record->mengetahui_id ?? '') : '') }}">
                 </div>
             </div>
 
@@ -101,11 +159,13 @@
                 <label>Kategori Pembukuan</label>
                 <div class="input-wrap">
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="kategori_pembukuan" value="1" checked>
+                        <input class="form-check-input" type="radio" name="kategori_pembukuan" value="1"
+                               {{ old('kategori_pembukuan', $isEdit ? $record->kategori_pembukuan : '1') == '1' ? 'checked' : '' }}>
                         <label class="form-check-label">1</label>
                     </div>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="kategori_pembukuan" value="2">
+                        <input class="form-check-input" type="radio" name="kategori_pembukuan" value="2"
+                               {{ old('kategori_pembukuan', $isEdit ? $record->kategori_pembukuan : '') == '2' ? 'checked' : '' }}>
                         <label class="form-check-label">2</label>
                     </div>
                 </div>
@@ -116,57 +176,70 @@
                 <label>Dokumen Pendukung</label>
                 <div class="input-wrap">
                     <div class="row">
+                        {{-- $dokSel sudah dinormalisasi di bagian atas --}}
                         <div class="col-6">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="kwitansi">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="kwitansi" {{ in_array('kwitansi', $dokSel) ? 'checked' : '' }}>
                                 <label class="form-check-label">Kwitansi</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="nota">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="nota" {{ in_array('nota', $dokSel) ? 'checked' : '' }}>
                                 <label class="form-check-label">Nota</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="bukti_transfer">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="bukti_transfer" {{ in_array('bukti_transfer', $dokSel) ? 'checked' : '' }}>
                                 <label class="form-check-label">Bukti Transfer</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="surat">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="surat" {{ in_array('surat', $dokSel) ? 'checked' : '' }}>
                                 <label class="form-check-label">Surat</label>
                             </div>
                         </div>
 
                         <div class="col-6">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="berita_acara">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="berita_acara" {{ in_array('berita_acara', $dokSel) ? 'checked' : '' }}>
                                 <label class="form-check-label">Berita Acara</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="laporan">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="laporan" {{ in_array('laporan', $dokSel) ? 'checked' : '' }}>
                                 <label class="form-check-label">Laporan</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="tanda_terima">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="tanda_terima" {{ in_array('tanda_terima', $dokSel) ? 'checked' : '' }}>
                                 <label class="form-check-label">Tanda Terima</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="lainnya">
+                                <input class="form-check-input" type="checkbox" name="dokumen_pendukung[]" value="lainnya" {{ in_array('lainnya', $dokSel) ? 'checked' : '' }}>
                                 <label class="form-check-label">Lainnya</label>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
             <div class="row-flex">
                 <label for="link_gdrive">Link Google Drive</label>
                 <div class="input-wrap">
                     <input type="url" id="link_gdrive" name="link_gdrive" class="form-control"
-                           placeholder="https://drive.google.com/drive/folders/..." value="{{ old('link_gdrive') }}">
+                           placeholder="https://drive.google.com/drive/folders/..." value="{{ old('link_gdrive', $isEdit ? $record->link_gdrive : '') }}">
                     <div class="form-text">Opsional — masukkan link file/folder Google Drive yang terkait.</div>
                 </div>
             </div>
 
+            <div class="row-flex">
+                <label for="catatan">Catatan</label>
+                <div class="input-wrap">
+                    <input type="text" id="catatan" name="catatan" class="form-control" value="{{ old('catatan', $isEdit ? $record->catatan : '') }}">
+                    <div class="form-text">Opsional — catatan singkat (maks 255 karakter).</div>
+                </div>
+            </div>
+
             <div class="text-end mt-3">
-                <button id="saveBtn" type="submit" class="btn btn-success"><i class="bi bi-save"></i> Simpan & Cetak</button>
+                <button id="saveBtn" type="submit" class="btn {{ $isEdit ? 'btn-warning' : 'btn-success' }}">
+                    <i class="bi {{ $isEdit ? 'bi-pencil' : 'bi-save' }}"></i>
+                    {{ $isEdit ? 'Update & Cetak' : 'Simpan & Cetak' }}
+                </button>
             </div>
         </form>
     </div>
@@ -176,8 +249,12 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    // transfer some PHP values to JS
+    const initialMenyetujui = {!! json_encode($initialMenyetujui) !!};
+    const initialMengetahui = {!! json_encode($initialMengetahui) !!};
+    const initialNominal = {!! json_encode($initialNominal ?: '') !!};
 
+    document.addEventListener('DOMContentLoaded', function () {
         const display = document.getElementById('nominal_display');
         const hidden  = document.getElementById('nominal');
 
@@ -192,31 +269,45 @@
         /* -----------------------
            FORMAT NOMINAL RUPIAH
         -------------------------*/
-        function formatRupiah(angka) {
-            return angka.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        function formatRupiahDigits(digits) {
+            // digits: string or number of only digits (e.g. "1200000")
+            if (!digits && digits !== 0) return '';
+            const s = String(digits).replace(/\D/g, '');
+            return s.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         }
 
-        function updateNominal(value) {
-            const angka = value.replace(/\D/g, "").replace(/^0+/, "") || "0";
-            hidden.value = angka;
-            display.value = angka === "0" ? "" : "Rp." + formatRupiah(angka);
-            // panggil API untuk memperbarui dropdown
-            loadOtorisasiOptions(parseInt(angka || 0, 10));
+        function setDisplayFromHidden() {
+            const val = hidden.value || '';
+            if (!val) {
+                display.value = '';
+            } else {
+                display.value = 'Rp.' + formatRupiahDigits(val);
+            }
+        }
+
+        // initialize display from hidden (so edit mode shows formatted Rp.)
+        setDisplayFromHidden();
+
+        function updateNominalFromInput(rawValue) {
+            const digits = String(rawValue).replace(/\D/g, '').replace(/^0+/, '') || '';
+            hidden.value = digits;
+            display.value = digits === '' ? '' : 'Rp.' + formatRupiahDigits(digits);
+            // after nominal update, panggil API
+            loadOtorisasiOptions(parseInt(digits || 0, 10));
         }
 
         display.addEventListener('input', function () {
-            const hanyaAngka = this.value.replace(/\D/g, "");
-            updateNominal(hanyaAngka);
+            updateNominalFromInput(this.value);
         });
 
         display.addEventListener('focus', function () {
-            const angka = hidden.value;
-            display.value = angka === "" ? "" : formatRupiah(angka);
+            // show digits-only formatted while editing (without "Rp." prefix)
+            const val = hidden.value || '';
+            this.value = val ? formatRupiahDigits(val) : '';
         });
 
         display.addEventListener('blur', function () {
-            const angka = hidden.value;
-            display.value = angka === "" ? "" : "Rp." + formatRupiah(angka);
+            setDisplayFromHidden();
         });
 
         display.addEventListener('keydown', function (e) {
@@ -231,100 +322,131 @@
            Helpers: clear select (keep placeholder)
         ----------------------------*/
         function clearSelectKeepPlaceholder(sel) {
+            if (!sel) return;
             while (sel.options.length > 1) sel.remove(1); // keep the first placeholder
         }
 
         function setSelectSingleOption(sel, value, text, personalisasi_id = '') {
+            if (!sel) return;
             clearSelectKeepPlaceholder(sel);
             const opt = document.createElement('option');
             opt.value = value || '';
             opt.text = text || '';
             if (personalisasi_id) opt.setAttribute('data-personalisasi-id', personalisasi_id);
             sel.add(opt);
+            // select it
+            sel.value = value || '';
         }
 
         /* -----------------------------------
            Fetch opsi otorisasi berdasarkan nominal
-           HANYA menampilkan 1 opsi rekomendasi (jika ada).
-           Endpoint: /spj/klasifikasi/classify?nominal=...
+           - jika ada rekomendasi dari API -> pakai itu
+           - jika tidak ada rekomendasi -> gunakan initialX (jika ada)
         --------------------------------------*/
         async function loadOtorisasiOptions(nominalValue) {
             try {
-                // jika nominal 0 atau kosong -> kosongkan dropdown dan disable
-                if (!nominalValue || nominalValue <= 0) {
-                    clearSelectKeepPlaceholder(mengetahuiSelect);
-                    clearSelectKeepPlaceholder(menyetujuiSelect);
-                    mengetahuiSelect.disabled = true;
-                    menyetujuiSelect.disabled = true;
+                // default: clear & disable
+                clearSelectKeepPlaceholder(mengetahuiSelect);
+                clearSelectKeepPlaceholder(menyetujuiSelect);
+                mengetahuiSelect.disabled = true;
+                menyetujuiSelect.disabled = true;
+                mengetahuiHidden.value = '';
+                mengetahuiIdHidden.value = '';
+                menyetujuiHidden.value = '';
+                menyetujuiIdHidden.value = '';
 
-                    // kosongkan hidden fields
-                    mengetahuiHidden.value = '';
-                    mengetahuiIdHidden.value = '';
-                    menyetujuiHidden.value = '';
-                    menyetujuiIdHidden.value = '';
+                if (!nominalValue || nominalValue <= 0) {
+                    // no nominal -> keep placeholder and disable
+                    // but if editing and initial names exist, show them
+                    if (initialMenyetujui) {
+                        setSelectSingleOption(menyetujuiSelect, initialMenyetujui, initialMenyetujui);
+                        menyetujuiSelect.disabled = false;
+                        menyetujuiHidden.value = initialMenyetujui;
+                    }
+                    if (initialMengetahui) {
+                        setSelectSingleOption(mengetahuiSelect, initialMengetahui, initialMengetahui);
+                        mengetahuiSelect.disabled = false;
+                        mengetahuiHidden.value = initialMengetahui;
+                    }
                     return;
                 }
 
                 const url = "{{ route('spj.klasifikasi.classify') }}?nominal=" + encodeURIComponent(nominalValue || 0);
                 const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" }});
                 if (!res.ok) {
-                    console.warn('classify API returned', res.status);
-                    mengetahuiSelect.disabled = true;
-                    menyetujuiSelect.disabled = true;
+                    // fallback: show initial if exists
+                    if (initialMenyetujui) {
+                        setSelectSingleOption(menyetujuiSelect, initialMenyetujui, initialMenyetujui);
+                        menyetujuiSelect.disabled = false;
+                        menyetujuiHidden.value = initialMenyetujui;
+                    }
+                    if (initialMengetahui) {
+                        setSelectSingleOption(mengetahuiSelect, initialMengetahui, initialMengetahui);
+                        mengetahuiSelect.disabled = false;
+                        mengetahuiHidden.value = initialMengetahui;
+                    }
                     return;
                 }
                 const body = await res.json();
                 if (!body.success) {
-                    mengetahuiSelect.disabled = true;
-                    menyetujuiSelect.disabled = true;
+                    if (initialMenyetujui) {
+                        setSelectSingleOption(menyetujuiSelect, initialMenyetujui, initialMenyetujui);
+                        menyetujuiSelect.disabled = false;
+                        menyetujuiHidden.value = initialMenyetujui;
+                    }
+                    if (initialMengetahui) {
+                        setSelectSingleOption(mengetahuiSelect, initialMengetahui, initialMengetahui);
+                        mengetahuiSelect.disabled = false;
+                        mengetahuiHidden.value = initialMengetahui;
+                    }
                     return;
                 }
 
                 const data = body.data || {};
                 const recommended = data.recommended || {};
 
-                // default: clear + disabled
-                clearSelectKeepPlaceholder(mengetahuiSelect);
-                clearSelectKeepPlaceholder(menyetujuiSelect);
-                mengetahuiSelect.disabled = true;
-                menyetujuiSelect.disabled = true;
-
-                // --- MENGETAHUI: jika ada rekomendasi, tampilkan 1 option (nama saja) dan enable select
+                // MENGETAHUI
                 if (recommended.mengetahui && recommended.mengetahui.nama) {
-                    setSelectSingleOption(mengetahuiSelect, recommended.mengetahui.id, recommended.mengetahui.nama, recommended.mengetahui.personalisasi_id || '');
+                    setSelectSingleOption(mengetahuiSelect, recommended.mengetahui.id || recommended.mengetahui.nama, recommended.mengetahui.nama, recommended.mengetahui.personalisasi_id || '');
                     mengetahuiSelect.disabled = false;
-
-                    // simpan *nama* ke hidden (sesuai permintaan)
                     mengetahuiHidden.value = recommended.mengetahui.nama || '';
                     mengetahuiIdHidden.value = '';
-                } else {
-                    mengetahuiHidden.value = '';
-                    mengetahuiIdHidden.value = '';
+                } else if (initialMengetahui) {
+                    // gunakan nilai yang ada di record jika API tidak rekomendasikan siapa pun
+                    setSelectSingleOption(mengetahuiSelect, initialMengetahui, initialMengetahui);
+                    mengetahuiSelect.disabled = false;
+                    mengetahuiHidden.value = initialMengetahui;
                 }
 
-                // --- MENYETUJUI: jika ada rekomendasi, tampilkan 1 option (nama saja) dan enable select
+                // MENYETUJUI
                 if (recommended.persetujuan && recommended.persetujuan.nama) {
-                    setSelectSingleOption(menyetujuiSelect, recommended.persetujuan.id, recommended.persetujuan.nama, recommended.persetujuan.personalisasi_id || '');
+                    setSelectSingleOption(menyetujuiSelect, recommended.persetujuan.id || recommended.persetujuan.nama, recommended.persetujuan.nama, recommended.persetujuan.personalisasi_id || '');
                     menyetujuiSelect.disabled = false;
-
-                    // simpan nama saja
                     menyetujuiHidden.value = recommended.persetujuan.nama || '';
                     menyetujuiIdHidden.value = '';
-                } else {
-                    menyetujuiHidden.value = '';
-                    menyetujuiIdHidden.value = '';
+                } else if (initialMenyetujui) {
+                    setSelectSingleOption(menyetujuiSelect, initialMenyetujui, initialMenyetujui);
+                    menyetujuiSelect.disabled = false;
+                    menyetujuiHidden.value = initialMenyetujui;
                 }
 
             } catch (err) {
                 console.error('Error loadOtorisasiOptions', err);
-                mengetahuiSelect.disabled = true;
-                menyetujuiSelect.disabled = true;
+                // fallback to initial if available
+                if (initialMenyetujui) {
+                    setSelectSingleOption(menyetujuiSelect, initialMenyetujui, initialMenyetujui);
+                    menyetujuiSelect.disabled = false;
+                    menyetujuiHidden.value = initialMenyetujui;
+                }
+                if (initialMengetahui) {
+                    setSelectSingleOption(mengetahuiSelect, initialMengetahui, initialMengetahui);
+                    mengetahuiSelect.disabled = false;
+                    mengetahuiHidden.value = initialMengetahui;
+                }
             }
         }
 
-        /* -----------------------------------
-           Sync hidden fields jika user ubah pilihan manual (meski hanya 1 opsi)
-        --------------------------------------*/
+        // Sync hidden fields when user changes selection
         mengetahuiSelect.addEventListener('change', function () {
             const selOpt = this.options[this.selectedIndex];
             const nama = selOpt ? selOpt.text : '';
@@ -339,23 +461,35 @@
             menyetujuiIdHidden.value = '';
         });
 
-        /* -----------------------------------
-           On page load: keep selects empty & disabled
-        --------------------------------------*/
-        clearSelectKeepPlaceholder(mengetahuiSelect);
-        clearSelectKeepPlaceholder(menyetujuiSelect);
-        mengetahuiSelect.disabled = true;
-        menyetujuiSelect.disabled = true;
+        // on load: if there's an initialNominal, call loader to populate selects (and allow override by API)
+        const initNom = (hidden.value && hidden.value !== '') ? parseInt(hidden.value, 10) : (initialNominal ? parseInt(initialNominal, 10) : 0);
+        if (initNom && !isNaN(initNom)) {
+            // ensure display consistent
+            setDisplayFromHidden();
+            loadOtorisasiOptions(initNom);
+        } else {
+            // still allow showing initial names if present even without nominal
+            if (initialMenyetujui) {
+                setSelectSingleOption(menyetujuiSelect, initialMenyetujui, initialMenyetujui);
+                menyetujuiSelect.disabled = false;
+                menyetujuiHidden.value = initialMenyetujui;
+            }
+            if (initialMengetahui) {
+                setSelectSingleOption(mengetahuiSelect, initialMengetahui, initialMengetahui);
+                mengetahuiSelect.disabled = false;
+                mengetahuiHidden.value = initialMengetahui;
+            }
+        }
 
         /* -----------------------------------
            HANDLE SUBMIT: PRINT + SIMPAN DATA
+           (tetap menggunakan AJAX dan server mengembalikan JSON)
         --------------------------------------*/
         const form = document.getElementById('buktiForm');
 
         form.addEventListener('submit', async function (e) {
-            e.preventDefault(); // cegah submit biasa
+            e.preventDefault();
 
-            // disable tombol agar user tidak spam klik
             const submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = true;
@@ -364,14 +498,9 @@
 
             const fd = new FormData(form);
 
-            // buka tab kosong sekarang supaya browser tidak memblok popup.
-            // kita akan isi lokasinya setelah simpan sukses.
+            // open blank tab early to avoid popup blocking
             let printWindow = null;
-            try {
-                printWindow = window.open('about:blank', '_blank');
-            } catch (err) {
-                printWindow = null;
-            }
+            try { printWindow = window.open('about:blank', '_blank'); } catch (err) { printWindow = null; }
 
             try {
                 const response = await fetch(form.action, {
@@ -384,7 +513,6 @@
                     body: fd
                 });
 
-                // coba parse JSON, jika bukan JSON -> treat as error
                 const contentType = response.headers.get('content-type') || '';
                 if (contentType.indexOf('application/json') === -1) {
                     const txt = await response.text();
@@ -393,66 +521,38 @@
 
                 const result = await response.json();
 
-                // sukses? (menyamakan pola response sebelumnya)
                 const isSuccess = result && (result.success === true || result.status === 'success' || result.status === 'ok');
 
                 if (!isSuccess) {
-                    // tutup printWindow kalau dibuka
                     if (printWindow && !printWindow.closed) printWindow.close();
-
-                    Swal.fire({
-                        icon: "error",
-                        title: "Gagal!",
-                        text: (result && (result.message || result.error || result.status)) || "Terjadi kesalahan saat menyimpan data"
-                    });
+                    Swal.fire({ icon: "error", title: "Gagal!", text: (result && (result.message || result.error || result.status)) || "Terjadi kesalahan saat menyimpan data" });
                     return;
                 }
 
-                // ambil id record yang baru dibuat
-                // backend Anda sebelumnya mengembalikan 'data' => $record
                 const created = result.data || {};
                 const newId = created.id || created.ID || createdIdFromResult(result);
 
                 if (!newId) {
-                    // jika id tidak ditemukan di payload, tutup window & beri info
                     if (printWindow && !printWindow.closed) printWindow.close();
-                    Swal.fire({
-                        icon: "warning",
-                        title: "Sukses disimpan, tapi ID tidak ditemukan",
-                        text: "Data berhasil disimpan tetapi server tidak mengembalikan ID. Coba refresh halaman."
-                    }).then(() => location.reload());
+                    Swal.fire({ icon: "warning", title: "Sukses disimpan, tapi ID tidak ditemukan", text: "Data berhasil disimpan tetapi server tidak mengembalikan ID. Coba refresh halaman." }).then(() => location.reload());
                     return;
                 }
 
-                // build url print berdasarkan id (gunakan endpoint print yang benar)
                 const printBase = "{{ url('/spj/bukti_bank_masuk/print') }}";
                 const printUrl = printBase + '?id=' + encodeURIComponent(newId);
 
-                // jika printWindow null (browser blok popup), buka normal sekarang (tab dipicu programmatically)
                 if (!printWindow || printWindow.closed) {
                     window.open(printUrl, '_blank');
                 } else {
-                    // arahkan tab kosong tadi ke print url
                     printWindow.location.href = printUrl;
                 }
 
-                // tampilkan notifikasi sukses lalu reload saat OK
-                Swal.fire({
-                    icon: "success",
-                    title: "Berhasil!",
-                    text: result.message || "Data berhasil disimpan",
-                    confirmButtonText: "OK"
-                }).then(() => location.reload());
+                Swal.fire({ icon: "success", title: "Berhasil!", text: result.message || "Data berhasil disimpan", confirmButtonText: "OK" }).then(() => location.reload());
 
             } catch (err) {
                 console.error('Error saat menyimpan & membuka print:', err);
                 if (printWindow && !printWindow.closed) printWindow.close();
-
-                Swal.fire({
-                    icon: "error",
-                    title: "Gagal!",
-                    text: err.message || "Terjadi error saat mengirim data!"
-                });
+                Swal.fire({ icon: "error", title: "Gagal!", text: err.message || "Terjadi error saat mengirim data!" });
             } finally {
                 if (submitBtn) {
                     submitBtn.disabled = false;
@@ -460,30 +560,24 @@
                 }
             }
 
-            // helper: jika server mengembalikan id dengan struktur lain, coba terbaca
             function createdIdFromResult(res) {
                 try {
                     if (!res) return null;
-                    // common locations
                     if (res.data && (res.data.id || res.data.ID)) return res.data.id || res.data.ID;
                     if (res.id) return res.id;
                     if (res.record && res.record.id) return res.record.id;
                     return null;
-                } catch (e) {
-                    return null;
-                }
+                } catch (e) { return null; }
             }
         });
 
     });
-</script>
 
-<script>
     flatpickr("#tanggal", {
         dateFormat: "Y-m-d",
         altInput: true,
         altFormat: "l, d F Y",
-        locale: "id", // Bahasa Indonesia
+        locale: "id",
         allowInput: true
     });
 </script>

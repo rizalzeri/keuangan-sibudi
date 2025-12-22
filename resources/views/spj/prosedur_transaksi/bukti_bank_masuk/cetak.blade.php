@@ -36,7 +36,7 @@
         .colon { width: 20px; }
         .value { flex: 1; border-bottom: 1px dotted #000; padding-bottom: 4px; }
 
-        /* ---- ubah ini ---- */
+        /* ---- sign area: both boxes sejajar ---- */
         .sign-area {
             position: absolute;
             top: 40%;
@@ -45,33 +45,47 @@
             bottom: 48px;
             display: flex;
             justify-content: space-between;
-            align-items: flex-start; /* penting */
+            gap: 24px;
         }
 
         .sign-box {
-            width: 220px;
-            text-align: center;
+            width: 260px;
+            /* fixed height ensures dotted lines are at the same vertical level */
+            height: 200px;
             display: flex;
             flex-direction: column;
+            justify-content: flex-end; /* tempatkan garis dekat bottom sehingga sejajar */
+            align-items: center;
+            box-sizing: border-box;
+            padding: 6px;
+            text-align: center;
         }
 
         .sign-title {
-            font-weight: 500;
+            margin-bottom: 60px;
+            font-size: 14px;
         }
 
-        .sign-space {
-            height: 90px; /* ruang tanda tangan — bikin sejajar */
+        /* area nama di atas garis — jika kosong, min-height menjaga ruang */
+        .sign-name {
+            min-height: 22px;
+            line-height: 1.2;
+            display: block;
+            text-align: center;
+            width: 100%;
         }
 
+        /* garis tanda tangan */
         .sign-line {
+            width: 100%;
             border-top: 1px dotted #000;
-            padding-top: 6px;
-            font-weight: 500;
+            margin-bottom: 4px;
         }
 
-        .sign-spacer {
-            height: 24px;   /* atur tinggi sesuai kebutuhan */
-            visibility: hidden; /* tetap ada di layout, tapi tidak terlihat */
+        /* caption / jabatan di bawah garis */
+        .sign-caption {
+            font-weight: 500;
+            min-height: 18px;
         }
 
         /* tombol download tetap terlihat di preview */
@@ -101,7 +115,9 @@
             $sumber = $record->sumber ?? '........';
             $nominal = $record->nominal ?? 0;
             $penerima = $record->penerima ?? '........';
-            $mengetahui = $record->mengetahui ?? '........';
+            $mengetahui = $record->mengetahui ?? null;
+            $catatan = $record->catatan ?? '........';
+            $jabatan_mengetahui = $jabatan_mengetahui ?? '........';
         } else {
             $tanggal = $data['tanggal'] ?? $data['tanggal_display'] ?? date('Y-m-d');
             $nama_transaksi = $data['transaksi'] ?? $data['nama_transaksi'] ?? '........';
@@ -109,9 +125,12 @@
             $sumber = $data['sumber'] ?? '........';
             $nominal = $data['nominal'] ?? 0;
             $penerima = $data['penerima'] ?? '........';
-            $mengetahui = $data['mengetahui'] ?? '........';
+            $mengetahui = $data['mengetahui'] ?? null;
+            $catatan = $data['catatan'] ?? '........';
+            $jabatan_mengetahui = $data['jabatan_mengetahui'] ?? '........';
         }
     @endphp
+
     <div class="page" id="receipt">
         <div class="header-left">
             <b>BUMDESA</b><br>
@@ -150,32 +169,37 @@
                 <div class="value">{{ $tanggal }}</div>
             </div>
 
+            <!-- <-- NEW: tampilkan Penerima di bawah Tanggal seperti yang diminta --> 
+            <div class="line-row">
+                <div class="label">Penerima</div>
+                <div class="colon">:</div>
+                <div class="value">{{ $penerima }}</div>
+            </div>
+
             <div class="line-row">
                 <div class="label">Catatan</div>
                 <div class="colon">:</div>
-                <div class="value">-</div>
+                <div class="value">{{ $catatan }}</div>
             </div>
         </div>
 
         <div class="sign-area">
 
-            {{-- MENGETAHUI --}}
+            {{-- MENGETAHUI (kiri) --}}
             <div class="sign-box">
-                <div class="sign-spacer"></div>
                 <div class="sign-title">Mengetahui</div>
 
-                {{-- optional jabatan --}}
-                {{-- <div style="font-size:14px">Kepala Bumdes</div> --}}
+                {{-- Nama yang mengetahui — tampil di atas garis jika ada, jika tidak biarkan kosong (ruang tetap ada) --}}
+                <div class="sign-name">{{ $mengetahui ?? '' }}</div>
 
-                <div class="sign-space"></div>
+                <div class="sign-line"></div>
 
-                <div class="sign-line">{{ $mengetahui }}</div>
+                <div class="sign-caption">{{ $jabatan_mengetahui }}</div>
             </div>
 
-            {{-- PENERIMA --}}
+            {{-- PENERIMA (kanan) --}}
             @php
                 use Carbon\Carbon;
-
                 try {
                     $tanggal_for_format = !empty($tanggal) ? $tanggal : now();
                     $tanggal_lokal = Carbon::parse($tanggal_for_format)
@@ -187,16 +211,26 @@
             @endphp
 
             <div class="sign-box">
-                <div class="sign-title">........, {{ $tanggal_lokal }}</div>
+                <!-- TITLE SEJAJAR DENGAN "Mengetahui" -->
+                <div class="sign-subtitle">........, {{ $tanggal_lokal }}</div>
+                <div class="sign-title">Penerima</div>
 
-                <div>Penerima</div>
+                <!-- TANGGAL DI ATAS AREA TTD -->
+                
 
-                <div class="sign-space"></div>
+                <!-- ruang nama di atas garis (opsional, tetap agar sejajar) -->
+                <div class="sign-name"></div>
 
-                <div class="sign-line">{{ $penerima }}</div>
+                <!-- garis tanda tangan -->
+                <div class="sign-line"></div>
+
+                <!-- nama penerima -->
+                <div class="sign-caption">{{ $penerima }}</div>
             </div>
 
+
         </div>
+
     </div>
 
     <!-- html2pdf bundle -->
@@ -207,26 +241,18 @@
         const btn = document.getElementById('downloadBtn');
         const element = document.getElementById('receipt');
 
-        // Fungsi util: ambil ukuran elemen (int)
         function getElementSize(el) {
             const rect = el.getBoundingClientRect();
             return { width: Math.round(rect.width), height: Math.round(rect.height) };
         }
 
-        // Render & download PDF dengan fidelity tinggi dan ukuran sama dengan canvas preview
         async function downloadPdfMatchingCanvas(filename = 'bukti_bank_masuk.pdf') {
-            // 1) ambil ukuran element saat ini
             const size = getElementSize(element);
-
-            // 2) simpan style sementara (hilangkan shadow agar tidak ikut tercetak)
             const prevBoxShadow = element.style.boxShadow;
             element.style.boxShadow = 'none';
-
-            // 3) tentukan scale yang masuk akal (devicePixelRatio bisa > 1)
             const deviceScale = window.devicePixelRatio ? Math.min(window.devicePixelRatio, 2) : 1;
-            const scale = Math.max(2, deviceScale); // gunakan minimal 2 untuk ketajaman
+            const scale = Math.max(2, deviceScale);
 
-            // 4) setup opsi html2pdf dengan jsPDF page size sama dengan ukuran elemen
             const opt = {
                 margin: 0,
                 filename: filename,
@@ -241,23 +267,18 @@
                 },
                 jsPDF: {
                     unit: 'px',
-                    // set format ke ukuran elemen agar hasil PDF punya dimensi sama persis
                     format: [size.width, size.height],
                     orientation: 'portrait'
                 }
             };
 
             try {
-                // 5) Jalankan render dan simpan
                 await html2pdf().set(opt).from(element).save();
-
-                // selesai — optional: beri notifibanki / console
                 console.log('PDF terdownload.');
             } catch (err) {
                 console.error('Gagal membuat PDF:', err);
                 alert('Gagal membuat PDF. Lihat console untuk detail.');
             } finally {
-                // 6) kembalikan style semula
                 element.style.boxShadow = prevBoxShadow || '';
             }
         }
@@ -266,8 +287,6 @@
             downloadPdfMatchingCanvas();
         });
 
-        // Opsional — jika mau auto-download ketika tab dibuka, uncomment berikut:
-        // window.addEventListener('load', () => downloadPdfMatchingCanvas());
     })();
     </script>
 

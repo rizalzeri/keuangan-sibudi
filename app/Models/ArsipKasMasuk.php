@@ -27,6 +27,7 @@ class ArsipKasMasuk extends Model
         'kategori_pembukuan',
         'dokumen_pendukung',
         'link_gdrive',
+        'catatan',
     ];
 
     // casting
@@ -35,4 +36,6 @@ class ArsipKasMasuk extends Model
         'tanggal_transaksi' => 'date',
         'nominal' => 'decimal:2',
     ];
+
+    
 }

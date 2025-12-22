@@ -172,11 +172,39 @@
             window.open(url, '_blank');
         });
 
+        // EDIT button -> redirect to appropriate form with id query param + return path
         $('#arsipTable tbody').on('click', '.btn-edit', function () {
             const $tr = $(this).closest('tr');
             const id = $(this).data('id');
-            alert('Edit: ' + $tr.find('td').eq(1).text().trim() + '\nID: ' + id);
+            const jenis = ($tr.data('jenis') || $tr.find('td').eq(4).text()).trim();
+
+            const editRoutes = {
+                'Bukti Bank Masuk': "{{ url('/spj/bukti_bank_masuk') }}",
+                'Bukti Bank Keluar': "{{ url('/spj/bukti_bank_keluar') }}",
+                'Bukti Kas Masuk': "{{ url('/spj/bukti_kas_masuk') }}",
+                'Bukti Kas Keluar': "{{ url('/spj/bukti_kas_keluar') }}"
+            };
+
+            const base = editRoutes[jenis];
+
+            if (!base) {
+                Swal.fire('Info', 'Tipe dokumen tidak dikenali untuk edit: ' + jenis, 'info');
+                return;
+            }
+            if (!id) {
+                Swal.fire('Info', 'ID tidak tersedia untuk record ini, tidak dapat melakukan edit.', 'warning');
+                return;
+            }
+
+            // gunakan path halaman sekarang sebagai return target (mis: /spj/arsip_pembukuan_1)
+            const returnPath = window.location.pathname || '/spj/arsip_pembukuan_1';
+            const url = base + '?id=' + encodeURIComponent(id) + '&mode=edit&return=' + encodeURIComponent(returnPath);
+
+            // navigasi
+            window.location.href = url;
         });
+
+
 
         $('#arsipTable tbody').on('click', '.btn-delete', function () {
             const $tr = $(this).closest('tr');

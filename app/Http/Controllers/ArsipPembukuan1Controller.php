@@ -9,6 +9,7 @@ use App\Models\ArsipBankMasuk;
 use App\Models\ArsipBankKeluar;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\ArsipPersonalisasi;
 class ArsipPembukuan1Controller extends Controller
 {
     // Sample dataset (replace with DB later)
@@ -140,7 +141,6 @@ class ArsipPembukuan1Controller extends Controller
                 continue;
             }
 
-            // ambil data dengan filter tahun dan KATEGORI = '2' (karena controller ini untuk kategori 2)
             $collection = $model::whereYear('tanggal_transaksi', $selectedYear)
                 ->where('kategori_pembukuan', '1')
                 ->orderBy('tanggal_transaksi', 'asc')
@@ -148,7 +148,6 @@ class ArsipPembukuan1Controller extends Controller
                 ->get();
 
             foreach ($collection as $rec) {
-
                 // dokumen pendukung -> format string (Kwitansi, Nota)
                 $dokArr = $rec->dokumen_pendukung ?? null;
                 $buktiDukung = $this->formatDokumenPendukung($dokArr);
@@ -157,6 +156,7 @@ class ArsipPembukuan1Controller extends Controller
                     'id' => $rec->id,
                     'transaksi' => $rec->nama_transaksi,
                     'nomor' => $rec->nomor_dokumen,
+                    'tanggal' => $rec->tanggal_transaksi ? $rec->tanggal_transaksi->format('d-m-Y') : '',
                     'jenis' => $jenis,
                     'bukti' => $buktiDukung,
                     'tautan' => $rec->link_gdrive,
@@ -164,7 +164,6 @@ class ArsipPembukuan1Controller extends Controller
             }
         }
 
-        // prepare data untuk view
         $data = [
             'rows' => $rows,
             'selectedYear' => $selectedYear,
@@ -172,18 +171,16 @@ class ArsipPembukuan1Controller extends Controller
             'title' => 'Rekapitulasi Pembukuan SPJ Pembukuan 1'
         ];
 
-        // jika dompdf tersedia (package barryvdh/laravel-dompdf)
         if (class_exists(PDF::class)) {
-            $pdf = PDF::loadView('spj.arsip_pembukuan_2.rekap_print', $data)
-                      ->setPaper('a4', 'portrait');
+            $pdf = PDF::loadView('spj.arsip_pembukuan_1.rekap_print', $data)
+                    ->setPaper('a4', 'portrait');
 
             return $pdf->stream('rekap_pembukuan_'.$selectedYear.'.pdf');
         }
 
-
-        // kalau tidak ada package PDF -> tampilkan HTML agar bisa di print manual
-        return view('spj.arsip_pembukuan_2.rekap_print', $data);
+        return view('spj.arsip_pembukuan_1.rekap_print', $data);
     }
+
 
     public function delete(Request $request, $id)
     {

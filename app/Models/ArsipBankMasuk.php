@@ -27,6 +27,7 @@ class ArsipBankMasuk extends Model
         'kategori_pembukuan',
         'dokumen_pendukung',
         'link_gdrive',
+        'catatan',
     ];
 
     // casting

@@ -1,4 +1,3 @@
-
 <!-- Modal Form Perjalanan Dinas -->
 <div class="modal fade" id="formModalPD" tabindex="-1" aria-labelledby="formModalLabelPD" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -54,16 +53,24 @@
               <label class="form-label">Transportasi</label>
               <div id="transportOptions" class="mb-2">
                 <div class="form-check form-check-inline">
-                  <input class="form-check-input transport-checkbox" type="checkbox" id="tr_pesawat" name="transport[]" value="Pesawat">
-                  <label class="form-check-label" for="tr_pesawat">Pesawat</label>
-                </div>
-                <div class="form-check form-check-inline">
-                  <input class="form-check-input transport-checkbox" type="checkbox" id="tr_bus" name="transport[]" value="Bus">
-                  <label class="form-check-label" for="tr_bus">Bus</label>
+                  <input class="form-check-input transport-checkbox" type="checkbox" id="tr_motor" name="transport[]" value="Motor">
+                  <label class="form-check-label" for="tr_motor">Motor</label>
                 </div>
                 <div class="form-check form-check-inline">
                   <input class="form-check-input transport-checkbox" type="checkbox" id="tr_mobil" name="transport[]" value="Mobil">
                   <label class="form-check-label" for="tr_mobil">Mobil</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input transport-checkbox" type="checkbox" id="tr_bus" name="transport[]" value="Bis">
+                  <label class="form-check-label" for="tr_bus">Bis</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input transport-checkbox" type="checkbox" id="tr_kereta" name="transport[]" value="Kereta">
+                  <label class="form-check-label" for="tr_kereta">Kereta</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input transport-checkbox" type="checkbox" id="tr_pesawat" name="transport[]" value="Pesawat">
+                  <label class="form-check-label" for="tr_pesawat">Pesawat</label>
                 </div>
                 <div class="form-check form-check-inline">
                   <input class="form-check-input transport-checkbox" type="checkbox" id="tr_lainnya" value="Lainnya">
@@ -75,6 +82,7 @@
               </div>
               <small class="text-muted">Pilih lebih dari satu jika perlu.</small>
             </div>
+
 
             <div class="col-12">
               <label for="pdGdrive" class="form-label">Link GDrive (opsional)</label>
@@ -102,7 +110,7 @@
 
             <!-- Personil dynamic -->
             <div class="col-12">
-              <label class="form-label">Pegawai / Personil</label>
+              <label class="form-label">Pegawai / Personil yang ditugaskan</label>
               <div id="personilList"></div>
               <button type="button" id="btnAddPersonil" class="btn btn-sm btn-outline-primary mt-2">Tambah Personil</button>
               <small class="text-muted d-block mt-1">Masukkan nama dan jabatan. Bisa lebih dari satu.</small>
@@ -123,9 +131,14 @@
               <input type="text" id="dasarPembeban" name="dasar_pembebanan_anggaran" class="form-control">
             </div>
 
+            {{-- Pembiayaan: tampilkan input formatted (Rp.) dan hidden numeric untuk dikirim --}}
             <div class="col-md-6">
-              <label for="pembiayaan" class="form-label">Pembiayaan</label>
-              <input type="number" id="pembiayaan" name="pembiayaan" class="form-control" step="0.01" min="0">
+              <label for="pembiayaan_display" class="form-label">Pembiayaan</label>
+              <div class="input-wrap d-flex">
+                <input type="text" id="pembiayaan_display" class="form-control" placeholder="Rp.0" autocomplete="off" inputmode="numeric">
+                <input type="hidden" id="pembiayaan" name="pembiayaan">
+              </div>
+              <small class="text-muted">Masukkan jumlah dalam rupiah. Akan disimpan sebagai angka (tanpa pemisah).</small>
             </div>
 
             <div class="col-12">
