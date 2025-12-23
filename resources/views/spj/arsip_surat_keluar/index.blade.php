@@ -169,8 +169,7 @@ $(function () {
 
         // Ambil link dari <span class="row-link d-none"> yang ada di kolom aksi
         // (kode Anda sebelumnya menyimpan row-link di td terakhir, jadi ini cocok)
-        let link = $tr.find('.row-link').first().text().trim() || '';
-
+        let link = $tr.find('.sk-gdrive').text().trim() || '';
         // Normalisasi dan cek "tidak ada"
         if (!link || link === 'null' || link === '-') {
             Swal.fire({
