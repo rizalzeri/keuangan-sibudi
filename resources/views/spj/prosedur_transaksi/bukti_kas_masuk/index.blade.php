@@ -231,7 +231,6 @@
                 <label for="catatan">Catatan</label>
                 <div class="input-wrap">
                     <input type="text" id="catatan" name="catatan" class="form-control" value="{{ old('catatan', $isEdit ? $record->catatan : '') }}">
-                    <div class="form-text">Opsional — catatan singkat (maks 255 karakter).</div>
                 </div>
             </div>
 

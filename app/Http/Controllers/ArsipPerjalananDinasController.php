@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\ArsipPerjalananDinas;
 use Carbon\Carbon;
 use PhpOffice\PhpWord\TemplateProcessor;
+use Illuminate\Support\Facades\Auth;
 
 class ArsipPerjalananDinasController extends Controller
 {
@@ -169,7 +170,7 @@ class ArsipPerjalananDinasController extends Controller
     }
 
     public function generateDoc($id)
-    {
+    {   
         $pd = ArsipPerjalananDinas::find($id);
         if (!$pd) {
             abort(404, 'Data tidak ditemukan');
@@ -187,6 +188,10 @@ class ArsipPerjalananDinasController extends Controller
             $tanggal = $pd->tanggal_perjalanan_dinas
                 ? Carbon::parse($pd->tanggal_perjalanan_dinas)->locale('id')->translatedFormat('d F Y')
                 : '';
+
+            // ambil nama_bumdes dari user yang sedang login (fallback ke kosong bila tidak ada)
+            $user = Auth::user();
+            $nama_bumdes = $user ? ($user->nama_bumdes ?? '') : '';
 
             // pegawai_personil: gunakan normalizePersonil untuk memastikan pasangan nama/jabatan
             $pegawaiLines = '';
@@ -239,6 +244,8 @@ class ArsipPerjalananDinasController extends Controller
                 'pembiayaan' => $pd->pembiayaan !== null ? number_format($pd->pembiayaan, 2, ',', '.') : '',
                 'keterangan' => $pd->keterangan ?? '',
                 'tempat_dikeluarkan' => $pd->tempat_dikeluarkan ?? '',
+                // tambahan: nama_bumdes dari users
+                'nama_bumdes' => $nama_bumdes,
             ];
 
             foreach ($map as $k => $v) {

@@ -135,8 +135,8 @@
     <div class="page" id="receipt">
         <div class="header-left">
             <b>BUMDESA</b><br>
-            <span style="text-decoration: underline dotted;">Alamat baris 1</span><br>
-            <span style="text-decoration: underline dotted;">Alamat baris 2</span>
+            <span>{{ $nama_bumdes }}</span><br>
+            <span>{{ $alamat_bumdes }}</span>
         </div>
 
         <div class="header-right">

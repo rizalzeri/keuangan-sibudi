@@ -187,13 +187,16 @@ class ProsedurTransaksiController extends Controller
     // PRINT (bisa menerima ?id=xx atau query params)
     public function print_kas_masuk(Request $request)
     {
+        // ambil user saat ini (bisa jadi null jika route tidak protected)
+        $user = Auth::user();
+        $nama_bumdes = $user ? $user->nama_bumdes ?? '' : '';
+        $alamat_bumdes = $user ? $user->alamat_bumdes ?? '' : '';
+
         if ($request->has('id')) {
             $id = $request->query('id');
             $record = ArsipKasMasuk::find($id);
-            
             if (!$record) abort(404, "Data ID $id tidak ditemukan");
-            
-            // Cari jabatan dari tabel personalisasi berdasarkan nama yang mengetahui
+
             $jabatanMengetahui = null;
             if ($record->mengetahui) {
                 $personalisasi = ArsipPersonalisasi::where('nama', $record->mengetahui)->first();
@@ -201,12 +204,15 @@ class ProsedurTransaksiController extends Controller
             }
             return view('spj.prosedur_transaksi.bukti_kas_masuk.cetak', [
                 'record' => $record,
-                'jabatan_mengetahui' => $jabatanMengetahui
+                'jabatan_mengetahui' => $jabatanMengetahui,
+                'nama_bumdes' => $nama_bumdes,
+                'alamat_bumdes' => $alamat_bumdes,
             ]);
         }
-        
+
+        // fallback: jika belum ada id, kirim semua query params ke view sebagai $data
         $data = $request->all();
-        return view('spj.prosedur_transaksi.bukti_kas_masuk.cetak', compact('data'));
+        return view('spj.prosedur_transaksi.bukti_kas_masuk.cetak', compact('data', 'nama_bumdes', 'alamat_bumdes'));
     }
 
     // kas keluar
@@ -394,23 +400,32 @@ class ProsedurTransaksiController extends Controller
     // =============================
     public function print_kas_keluar(Request $request)
     {
+        // ambil user saat ini (bisa jadi null jika route tidak protected)
+        $user = Auth::user();
+        $nama_bumdes = $user ? $user->nama_bumdes ?? '' : '';
+        $alamat_bumdes = $user ? $user->alamat_bumdes ?? '' : '';
+
         if ($request->has('id')) {
             $id = $request->query('id');
             $record = ArsipKasKeluar::find($id);
             if (!$record) abort(404, "Data ID $id tidak ditemukan");
-            // Cari jabatan dari tabel personalisasi berdasarkan nama yang mengetahui
+
             $jabatanMengetahui = null;
             if ($record->mengetahui) {
                 $personalisasi = ArsipPersonalisasi::where('nama', $record->mengetahui)->first();
                 $jabatanMengetahui = $personalisasi ? $personalisasi->jabatan : null;
             }
-            return view('spj.prosedur_transaksi.bukti_kas_masuk.cetak', [
+            return view('spj.prosedur_transaksi.bukti_kas_keluar.cetak', [
                 'record' => $record,
-                'jabatan_mengetahui' => $jabatanMengetahui
+                'jabatan_mengetahui' => $jabatanMengetahui,
+                'nama_bumdes' => $nama_bumdes,
+                'alamat_bumdes' => $alamat_bumdes,
             ]);
         }
+
+        // fallback: jika belum ada id, kirim semua query params ke view sebagai $data
         $data = $request->all();
-        return view('spj.prosedur_transaksi.bukti_kas_keluar.cetak', compact('data'));
+        return view('spj.prosedur_transaksi.bukti_kas_keluar.cetak', compact('data', 'nama_bumdes', 'alamat_bumdes'));
     }
 
     // kas keluar
@@ -598,12 +613,16 @@ class ProsedurTransaksiController extends Controller
     // =============================
     public function print_bank_keluar(Request $request)
     {
+        // ambil user saat ini (bisa jadi null jika route tidak protected)
+        $user = Auth::user();
+        $nama_bumdes = $user ? $user->nama_bumdes ?? '' : '';
+        $alamat_bumdes = $user ? $user->alamat_bumdes ?? '' : '';
+
         if ($request->has('id')) {
             $id = $request->query('id');
             $record = ArsipBankKeluar::find($id);
-            if (!$record) {
-                abort(404, "Data ID $id tidak ditemukan");
-            }
+            if (!$record) abort(404, "Data ID $id tidak ditemukan");
+
             $jabatanMengetahui = null;
             if ($record->mengetahui) {
                 $personalisasi = ArsipPersonalisasi::where('nama', $record->mengetahui)->first();
@@ -611,12 +630,15 @@ class ProsedurTransaksiController extends Controller
             }
             return view('spj.prosedur_transaksi.bukti_bank_keluar.cetak', [
                 'record' => $record,
-                'jabatan_mengetahui' => $jabatanMengetahui
+                'jabatan_mengetahui' => $jabatanMengetahui,
+                'nama_bumdes' => $nama_bumdes,
+                'alamat_bumdes' => $alamat_bumdes,
             ]);
         }
 
+        // fallback: jika belum ada id, kirim semua query params ke view sebagai $data
         $data = $request->all();
-        return view('spj.prosedur_transaksi.bukti_bank_keluar.cetak', compact('data'));
+        return view('spj.prosedur_transaksi.bukti_bank_keluar.cetak', compact('data', 'nama_bumdes', 'alamat_bumdes'));
     }
 
     // bank masuk

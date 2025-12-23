@@ -122,41 +122,50 @@ document.addEventListener('DOMContentLoaded', function () {
         url.searchParams.set('type', qType);
         window.location.href = url.toString();
     });
-
+    const printRoutes = {
+            'Bukti Bank Masuk': "{{ url('/spj/bukti_bank_masuk/print') }}",
+            'Bukti Bank Keluar': "{{ url('/spj/bukti_bank_keluar/print') }}",
+            'Bukti Kas Masuk': "{{ url('/spj/bukti_kas_masuk/print') }}",
+            'Bukti Kas Keluar': "{{ url('/spj/bukti_kas_keluar/print') }}"
+        };
     // action buttons (lihat)
     $('#arsipTable tbody').on('click', '.btn-view', function () {
         const $tr = $(this).closest('tr');
-        const id = $(this).data('id');
-        const link = $(this).data('link') || $tr.data('link') || '';
-
+        const id = $(this).data('id') || $tr.data('id') || '';
+        // prefer data-jenis attribute dari <tr>, fallback ambil dari kolom
+        const jenis = ($tr.data('jenis') || $tr.find('td').eq(4).text()).trim();
         const transaksi = $tr.find('td').eq(1).text().trim();
         const nomor = $tr.find('td').eq(2).text().trim();
-        const tanggal = $tr.find('td').eq(3).text().trim(); // updated index
-        const jenis = $tr.find('td').eq(4).text().trim();
+        const tanggal = $tr.find('td').eq(3).text().trim();
         const bukti = $tr.find('td').eq(5).text().trim();
+        const link = $(this).data('link') || $tr.data('link') || '';
 
-        $('#viewTransaksi').text(transaksi);
-        $('#viewNomor').text(nomor);
-        $('#viewTanggal').text(tanggal); // set tanggal
-        $('#viewJenis').text(jenis);
-        $('#viewBukti').text(bukti);
+        const base = printRoutes[jenis];
 
-        if (link && link !== "") {
-            let displayLink = link;
-            if (!/^https?:\/\//i.test(displayLink)) displayLink = 'https://' + displayLink;
-            $('#viewLinkDrive').html(`<a href="${displayLink}" target="_blank" rel="noopener noreferrer">Buka Dokumen</a>`);
-        } else {
-            $('#viewLinkDrive').html(`<em>Tidak tersedia</em>`);
+        if (!base) {
+            // tidak dikenali -> beri notifikasi
+            Swal.fire('Info', 'Tipe dokumen tidak dikenali untuk cetak: ' + jenis, 'info');
+            return;
         }
 
-        // Tampilkan modal (Bootstrap 5)
-        var modalEl = document.getElementById('modalView');
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
+        // jika ada id, cukup kirim id supaya controller menarik data lengkap dari DB
+        let url;
+        if (id) {
+            url = base + '?id=' + encodeURIComponent(id);
         } else {
-            $('#modalView').modal('show');
+            // fallback: kirim beberapa field lewat query string (controller view akan menerima $data fallback)
+            const params = new URLSearchParams({
+                transaksi: transaksi || '',
+                nomor: nomor || '',
+                tanggal: tanggal || '',
+                bukti: bukti || '',
+                link_gdrive: link || ''
+            });
+            url = base + '?' + params.toString();
         }
+
+        // buka halaman cetak di tab baru
+        window.open(url, '_blank');
     });
 
     // edit

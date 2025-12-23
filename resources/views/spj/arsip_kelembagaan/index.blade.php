@@ -28,7 +28,6 @@
                                 <td>
                                     {{ $i+1 }}
                                     <span class="row-id d-none">{{ $d->id }}</span>
-                                    <span class="row-link d-none">{{ $d->link_gdrive }}</span>
                                     <span class="row-nama d-none">{{ $d->nama_dokumen }}</span>
                                     <span class="row-nomor d-none">{{ $d->nomor }}</span>
                                     <span class="row-status d-none">{{ $d->status }}</span>
