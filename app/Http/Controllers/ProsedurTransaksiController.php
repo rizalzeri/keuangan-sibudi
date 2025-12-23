@@ -8,6 +8,7 @@ use App\Models\ArsipKasKeluar;
 use App\Models\ArsipBankMasuk;
 use App\Models\ArsipBankKeluar;
 use App\Models\ArsipPersonalisasi;
+use Illuminate\Support\Facades\Auth;
 class ProsedurTransaksiController extends Controller
 {
     public function bukti_kas_masuk(Request $request)
@@ -815,10 +816,16 @@ class ProsedurTransaksiController extends Controller
     // PRINT (bisa menerima ?id=xx atau query params)
     public function print_bank_masuk(Request $request)
     {
+        // ambil user saat ini (bisa jadi null jika route tidak protected)
+        $user = Auth::user();
+        $nama_bumdes = $user ? $user->nama_bumdes ?? '' : '';
+        $alamat_bumdes = $user ? $user->alamat_bumdes ?? '' : '';
+
         if ($request->has('id')) {
             $id = $request->query('id');
             $record = ArsipBankMasuk::find($id);
             if (!$record) abort(404, "Data ID $id tidak ditemukan");
+
             $jabatanMengetahui = null;
             if ($record->mengetahui) {
                 $personalisasi = ArsipPersonalisasi::where('nama', $record->mengetahui)->first();
@@ -826,12 +833,15 @@ class ProsedurTransaksiController extends Controller
             }
             return view('spj.prosedur_transaksi.bukti_bank_masuk.cetak', [
                 'record' => $record,
-                'jabatan_mengetahui' => $jabatanMengetahui
+                'jabatan_mengetahui' => $jabatanMengetahui,
+                'nama_bumdes' => $nama_bumdes,
+                'alamat_bumdes' => $alamat_bumdes,
             ]);
         }
+
         // fallback: jika belum ada id, kirim semua query params ke view sebagai $data
         $data = $request->all();
-        return view('spj.prosedur_transaksi.bukti_bank_masuk.cetak', compact('data'));
+        return view('spj.prosedur_transaksi.bukti_bank_masuk.cetak', compact('data', 'nama_bumdes', 'alamat_bumdes'));
     }
 
     private function monthToRoman(int $month): string

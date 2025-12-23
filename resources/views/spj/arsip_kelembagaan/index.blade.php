@@ -251,28 +251,34 @@ $(function () {
     // VIEW: isi modal view dengan data dari row (pastikan modal punya #viewLink etc)
     // VIEW
     $tbody.on('click', '.btn-view', function () {
-
         const $tr = $(this).closest('tr');
 
-        const nama  = $tr.find('td').eq(1).text().trim();
-        const nomor = $tr.find('td').eq(2).text().trim();
-        const statusHtml = $tr.find('td').eq(3).html().trim();
-
-        // 🔥 PERBAIKAN DI SINI — AMBIL DARI .row-link
-        const link = $tr.find('.row-link').text().trim() || null;
-
-        $('#viewNama').text(nama || '-');
-        $('#viewNomor').text(nomor || '-');
-        $('#viewStatus').html(statusHtml || '-');
-
-        if (link) {
-            $('#viewLink').attr('href', link).text('Buka Link').removeClass('text-muted');
-        } else {
-            $('#viewLink').attr('href', '#').text('Tidak ada link').addClass('text-muted');
+        // Ambil link dari data attribute (dipakai saat appendRow men-set data-link)
+        // atau fallback ke span.row-link jika ada di markup awal
+        let link = ($tr.attr('data-link') || '').trim();
+        if (!link) {
+            link = $tr.find('.row-link').first().text().trim();
         }
 
-        new bootstrap.Modal(document.getElementById('viewModal')).show();
+        // normalize beberapa nilai yang menandakan "tidak ada"
+        if (!link || link === 'null' || link === '-' ) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Tidak ada Link GDrive',
+                text: 'Tidak ada link GDrive yang diupload untuk dokumen ini.',
+            });
+            return;
+        }
+
+        // pastikan URL memiliki schema, jika user menyimpan tanpa http(s) tambahkan https://
+        if (!/^https?:\/\//i.test(link)) {
+            link = 'https://' + link;
+        }
+
+        // buka di tab baru
+        window.open(link, '_blank');
     });
+
 
 
 

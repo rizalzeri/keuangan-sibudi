@@ -187,28 +187,27 @@ $(function () {
     // VIEW (using td.eq)
     $tbody.on('click', '.btn-view', function () {
         const $tr = $(this).closest('tr');
-        const tds = $tr.find('td');
 
-        const tanggalVisible = tds.eq(1).find('.nr-date-visible').text().trim() || '-';
-        const waktu = tds.eq(2).text().trim() || '-';
-        const tempat = tds.eq(3).text().trim() || '-';
-        const agendaHtml = tds.eq(4).html().trim() || '-';
-        const penyelenggara = tds.eq(5).text().trim() || '-';
-        const gdrive = tds.eq(6).find('.nr-gdrive').text().trim() || '';
+        // ambil link dari span tersembunyi
+        let link = $tr.find('.nr-gdrive').text().trim() || '';
 
-        $('#viewTanggalNotulen').text(tanggalVisible);
-        $('#viewWaktuNotulen').text(waktu);
-        $('#viewTempatNotulen').text(tempat);
-        $('#viewAgendaNotulen').html(agendaHtml === '' ? '-' : agendaHtml);
-        $('#viewPenyelenggaraNotulen').text(penyelenggara);
-
-        if (gdrive) {
-            $('#viewGdriveNotulen').attr('href', gdrive).text('Buka GDrive').removeClass('text-muted');
-        } else {
-            $('#viewGdriveNotulen').attr('href', '#').text('Tidak ada link').addClass('text-muted');
+        // kondisi link kosong / tidak valid
+        if (!link || link === 'null' || link === '-') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Tidak ada Link GDrive',
+                text: 'Tidak ada link GDrive yang diupload untuk dokumen ini.',
+            });
+            return;
         }
 
-        new bootstrap.Modal(document.getElementById('viewModalNotulen')).show();
+        // fallback jika user input tanpa http/https
+        if (!/^https?:\/\//i.test(link)) {
+            link = 'https://' + link;
+        }
+
+        // buka di tab baru
+        window.open(link, '_blank');
     });
 
     // EDIT (using td.eq; raw date stored inside date cell)

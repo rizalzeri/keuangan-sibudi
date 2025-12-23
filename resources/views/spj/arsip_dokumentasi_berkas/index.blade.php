@@ -160,25 +160,29 @@ $(function(){
     const $tr = $(this).closest('tr');
 
     // VIEW
-    $tbody.on('click', '.btn-view', function(){
+    $tbody.on('click', '.btn-view', function () {
         const $tr = $(this).closest('tr');
-        const tds = $tr.find('td');
-        const year = $tr.data('year') || '-';
-        const rawDate = tds.eq(1).data('date') || '';
-        const nama = tds.eq(2).text().trim() || '-';
-        const gdrive = $tr.find('.berkas-gdrive').text().trim() || '';
 
-        $('#viewBerkasYear').text(year);
-        $('#viewBerkasTanggalFull').text(rawDate || '-');
-        $('#viewBerkasNama').text(nama);
+        // ambil link dari span tersembunyi
+        let link = $tr.find('.berkas-gdrive').text().trim() || '';
 
-        if (gdrive) {
-            $('#viewBerkasGdrive').attr('href', gdrive).text('Buka GDrive').removeClass('text-muted');
-        } else {
-            $('#viewBerkasGdrive').attr('href','#').text('Tidak ada link').addClass('text-muted');
+        // 🔥 KONDISI SESUAI PERMINTAAN
+        if (!link || link === 'null' || link === '-') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Tidak ada Link GDrive',
+                text: 'Tidak ada link GDrive yang diupload untuk dokumen ini.',
+            });
+            return;
         }
 
-        new bootstrap.Modal(document.getElementById('viewBerkasModal')).show();
+        // fallback jika user input tanpa http/https
+        if (!/^https?:\/\//i.test(link)) {
+            link = 'https://' + link;
+        }
+
+        // buka di tab baru
+        window.open(link, '_blank');
     });
 
     // EDIT

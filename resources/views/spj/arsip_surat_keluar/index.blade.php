@@ -166,24 +166,28 @@ $(function () {
     // VIEW
     $tbody.on('click', '.btn-view', function () {
         const $tr = $(this).closest('tr');
-        // new index: 0=no,1=judul,2=nomor,3=tujuan,4=isi,5=gdrive,6=aksi
-        const judul = $tr.find('td').eq(1).text().trim() || '-';
-        const nomor = $tr.find('td').eq(2).text().trim() || '-';
-        const tujuan = $tr.find('td').eq(3).text().trim() || '-';
-        const isiHtml = $tr.find('td').eq(4).html().trim() || '-';
-        const link = $tr.find('.sk-gdrive').text().trim() || '';
 
-        $('#viewNomor').text(nomor);
-        $('#viewTujuan').text(tujuan);
-        $('#viewJudul').text(judul);
-        $('#viewIsi').html(isiHtml === '' ? '-' : isiHtml);
+        // Ambil link dari <span class="row-link d-none"> yang ada di kolom aksi
+        // (kode Anda sebelumnya menyimpan row-link di td terakhir, jadi ini cocok)
+        let link = $tr.find('.row-link').first().text().trim() || '';
 
-        if (link) {
-            $('#viewGDrive').attr('href', link).text('Buka Link').removeClass('text-muted');
-        } else {
-            $('#viewGDrive').attr('href', '#').text('Tidak ada link').addClass('text-muted');
+        // Normalisasi dan cek "tidak ada"
+        if (!link || link === 'null' || link === '-') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Tidak ada Link GDrive',
+                text: 'Tidak ada link GDrive yang diupload untuk dokumen ini.',
+            });
+            return;
         }
-        new bootstrap.Modal(document.getElementById('viewModal')).show();
+
+        // Jika user menyimpan link tanpa schema, tambahkan https:// sebagai fallback
+        if (!/^https?:\/\//i.test(link)) {
+            link = 'https://' + link;
+        }
+
+        // Buka di tab baru
+        window.open(link, '_blank');
     });
 
     // EDIT

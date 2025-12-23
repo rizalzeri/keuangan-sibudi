@@ -172,31 +172,27 @@ $(function () {
     // VIEW
     $tbody.on('click', '.btn-view', function () {
         const $tr = $(this).closest('tr');
-        const tds = $tr.find('td');
 
-        const nama = tds.eq(1).text().trim() || '-';
-        const nomor = tds.eq(2).text().trim() || '-';
-        const pihak = tds.eq(3).text().trim() || '-';
-        const bentuk = tds.eq(4).text().trim() || '-';
-        const deskripsiHtml = tds.eq(5).html().trim() || '-';
-        const durasiBadgeHtml = tds.eq(6).html().trim() || '-';
-        const gdrive = tds.eq(7).find('.pk-gdrive').text().trim() || '';
+        // ambil link dari span tersembunyi
+        let link = $tr.find('.pk-gdrive').text().trim() || '';
 
-        // set modal
-        $('#viewPerjNama').text(nama);
-        $('#viewPerjNomor').text(nomor);
-        $('#viewPerjPihak').text(pihak);
-        $('#viewPerjBentuk').text(bentuk);
-        $('#viewPerjDeskripsi').html(deskripsiHtml === '' ? '-' : deskripsiHtml);
-        $('#viewPerjDurasi').html(durasiBadgeHtml === '' ? '-' : durasiBadgeHtml);
-
-        if (gdrive) {
-            $('#viewPerjGdrive').attr('href', gdrive).text('Buka GDrive').removeClass('text-muted');
-        } else {
-            $('#viewPerjGdrive').attr('href', '#').text('Tidak ada link').addClass('text-muted');
+        // kondisi link kosong / tidak valid
+        if (!link || link === 'null' || link === '-') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Tidak ada Link GDrive',
+                text: 'Tidak ada link GDrive yang diupload untuk dokumen ini.',
+            });
+            return;
         }
 
-        new bootstrap.Modal(document.getElementById('viewModalPerj')).show();
+        // fallback jika user input tanpa http/https
+        if (!/^https?:\/\//i.test(link)) {
+            link = 'https://' + link;
+        }
+
+        // buka di tab baru
+        window.open(link, '_blank');
     });
 
     // EDIT

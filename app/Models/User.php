@@ -25,7 +25,16 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $guarded = ['id'];
+    protected $appends = ['bumdes_info_complete'];
+     public function getBumdesInfoCompleteAttribute()
+    {
+        return !empty($this->nama_bumdes) && !empty($this->alamat_bumdes) && !empty($this->nomor_hukum_bumdes);
+    }
 
+    public function isBumdesInfoComplete()
+    {
+        return $this->bumdes_info_complete;
+    }
     /**
      * The attributes that should be hidden for serialization.
      *

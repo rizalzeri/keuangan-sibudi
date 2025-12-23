@@ -4,7 +4,94 @@
 <div class="container py-4">
     <h3>Kelola Akun</h3>
     <p class="text-muted">Lembaga Bumdes</p>
+        <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+            <div class="card-body mt-4">
+                <div class="d-flex flex-column flex-md-row gap-3 align-items-start">
+                {{-- Avatar / badge --}}
+                <div class="d-flex align-items-center" style="min-width:150px;">
+                    
+                    <div class="d-none d-md-block">
+                    <h5 class="mb-1">{{ $user->name }}</h5>
+                    <div class="text-muted small d-flex align-items-center">
+                        <span id="email-text">{{ $user->email }}</span>
+                        <button id="btn-copy-email" class="btn btn-link btn-sm p-0 ms-2" title="Salin email">
+                        <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
 
+                    <div class="mt-2">
+                        @php
+                        $complete = !empty($user->nama_bumdes) && !empty($user->alamat_bumdes) && !empty($user->nomor_hukum_bumdes);
+                        @endphp
+
+                        <span class="badge {{ $complete ? 'bg-success' : 'bg-warning text-dark' }}">
+                        {{ $complete ? 'Profil BUMDes Lengkap' : 'Profil BUMDes Belum Lengkap' }}
+                        </span>
+                    </div>
+                    </div>
+                </div>
+
+                {{-- Info detail (expandable) --}}
+                <div class="flex-fill">
+                    <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                        <div class="fw-semibold">Nama BUMDes</div>
+                        <div class="text-truncate">{{ $user->nama_bumdes ?? '-' }}</div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="fw-semibold">Nomor Hukum</div>
+                        <div class="text-truncate">{{ $user->nomor_hukum_bumdes ?? '-' }}</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="fw-semibold">Alamat BUMDes</div>
+                        <div class="text-muted small text-truncate" style="max-width:100%;">{{ $user->alamat_bumdes ?? '-' }}</div>
+                    </div>
+                    </div>
+                </div>
+
+                {{-- Actions --}}
+                <div class="text-end">
+                    <button id="btn-edit-akun" class="btn btn-primary mb-2">
+                    <i class="bi bi-pencil-square me-1"></i> Edit Profil BUMDes
+                    </button>
+
+                    {{-- tombol kecil untuk lengkapi segera jika belum lengkap --}}
+                    @unless($complete)
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" id="btn-lengkapi-sekarang" type="button">
+                        <i class="bi bi-exclamation-circle me-1"></i> Lengkapi Sekarang
+                        </button>
+                    </div>
+                    @endunless
+                </div>
+                </div>
+
+                {{-- Warning / hint --}}
+                @if(!$complete)
+                <div class="mt-3">
+                    <div class="alert alert-warning mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <div class="small mb-0">
+                        Informasi BUMDes belum lengkap. Lengkapi <strong>Nama</strong>, <strong>Alamat</strong>, dan <strong>Nomor Hukum</strong> supaya dokumen & laporan lebih rapi.
+                    </div>
+                    </div>
+                </div>
+                @else
+                <div class="mt-3">
+                    <div class="alert alert-success mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-check2-circle"></i>
+                    <div class="small mb-0">
+                        Profil BUMDes sudah lengkap — terima kasih!
+                    </div>
+                    </div>
+                </div>
+                @endif
+            </div>
+            </div>
+        </div>
+        </div>
     <div class="row g-3">
         {{-- Personalisasi --}}
         <div class="col-md-6">
@@ -269,6 +356,51 @@
                 error(xhr){ if(xhr.status===422){ Swal.fire({icon:'error', html:Object.values(xhr.responseJSON.errors||{}).flat().join('<br>')}); } else Swal.fire('Error','Gagal menyimpan','error'); }
             });
         });
+        // buka modal dan isi form dari data yang ada di halaman (blade) atau fetch via AJAX
+        $('#btn-edit-akun').on('click', function() {
+            // isi dari blade (safe) — fallback ke AJAX get jika perlu
+            $('#akun-name').val("{{ addslashes($user->name) }}");
+            $('#akun-email').val("{{ addslashes($user->email) }}");
+            $('#akun-nama_bumdes').val("{{ addslashes($user->nama_bumdes ?? '') }}");
+            $('#akun-alamat_bumdes').val("{{ addslashes($user->alamat_bumdes ?? '') }}");
+            $('#akun-nomor_hukum_bumdes').val("{{ addslashes($user->nomor_hukum_bumdes ?? '') }}");
+
+            new bootstrap.Modal(document.getElementById('modalAkunBumdes')).show();
+        });
+
+        $('#akun-form').on('submit', function(e) {
+            e.preventDefault();
+            $('#akun-form-errors').html('');
+            $('#akun-submit').prop('disabled', true);
+
+            const payload = {
+                name: $('#akun-name').val().trim(),
+                email: $('#akun-email').val().trim(),
+                nama_bumdes: $('#akun-nama_bumdes').val().trim(),
+                alamat_bumdes: $('#akun-alamat_bumdes').val().trim(),
+                nomor_hukum_bumdes: $('#akun-nomor_hukum_bumdes').val().trim()
+            };
+
+            $.ajax({
+                url: '/spj/arsip_kelola_akun/account',
+                method: 'PUT',
+                data: payload,
+                success(res) {
+                    Swal.fire({ icon: 'success', title: 'Tersimpan', timer: 900, showConfirmButton: false })
+                        .then(() => location.reload());
+                },
+                error(xhr) {
+                    $('#akun-submit').prop('disabled', false);
+                    if (xhr.status === 422) {
+                        const msgs = Object.values(xhr.responseJSON.errors || {}).flat();
+                        $('#akun-form-errors').html('<div class="alert alert-danger">'+ msgs.join('<br>') +'</div>');
+                    } else {
+                        Swal.fire('Error', xhr.responseJSON?.message || 'Gagal menyimpan data', 'error');
+                    }
+                }
+            });
+        });
+
 
     }); // end jquery ready
 </script>

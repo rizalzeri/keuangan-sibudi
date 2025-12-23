@@ -604,4 +604,9 @@ Route::group(['middleware' => ['auth','role_user:3']], function () {
     // web.php
     Route::get('/spj/klasifikasi/classify', [ArsipKelolaAkunController::class, 'classifyByNominal'])->name('spj.klasifikasi.classify');
 
+    // Account (ambil & update data user saat ini)
+    Route::get('/spj/arsip_kelola_akun/account', [ArsipKelolaAkunController::class, 'getAccount']);
+    Route::put('/spj/arsip_kelola_akun/account', [ArsipKelolaAkunController::class, 'updateAccount']);
+
+
 });

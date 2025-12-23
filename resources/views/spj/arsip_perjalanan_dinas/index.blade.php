@@ -279,55 +279,45 @@ document.addEventListener('DOMContentLoaded', function(){
 
     // View button -> isi modal view dan tampilkan
     document.querySelectorAll('.btn-view').forEach(btn => {
-        btn.addEventListener('click', async function(){
+        btn.addEventListener('click', async function () {
             const id = this.dataset.id;
-            try{
-                const res = await fetch('{{ url('/spj/arsip_perjalanan_dinas') }}/' + id);
-                if(!res.ok) throw new Error('Gagal ambil data');
+
+            try {
+                const res = await fetch(`{{ url('/spj/arsip_perjalanan_dinas') }}/${id}`);
+                if (!res.ok) throw new Error('Gagal ambil data');
+
                 const data = await res.json();
+                let link = (data.link_gdrive || '').trim();
 
-                // isi view modal fields
-                document.getElementById('viewPdKegiatan').textContent = data.kegiatan || '-';
-                document.getElementById('viewPdNomor').textContent = data.nomor_dokumen || '-';
-                // tanggal -> indonesia
-                document.getElementById('viewPdTanggal').textContent = data.tanggal_perjalanan_dinas
-                    ? (new Date(data.tanggal_perjalanan_dinas)).toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' })
-                    : '-';
-                document.getElementById('viewPdTempat').textContent = (data.tempat || '') + (data.tempat_2 ? (' ('+data.tempat_2+')') : '');
-                // transport display
-                let transportText = '';
-                if(data.transport){
-                    if(typeof data.transport === 'string'){
-                        try{ transportText = JSON.parse(data.transport); }catch(e){ transportText = data.transport; }
-                    } else if(Array.isArray(data.transport)){
-                        transportText = data.transport.map(t => {
-                            if(typeof t === 'string') return t;
-                            if(typeof t === 'object') return t.other || t.label || JSON.stringify(t);
-                            return t;
-                        }).join(', ');
-                    } else transportText = String(data.transport);
-                }
-                document.getElementById('viewPdTransport').textContent = transportText || '-';
-
-                const gdrive = data.link_gdrive || '';
-                const a = document.getElementById('viewPdGdrive');
-                if(gdrive){
-                    a.href = gdrive;
-                    a.textContent = 'Buka GDrive';
-                    a.classList.remove('text-muted');
-                } else {
-                    a.href = '#';
-                    a.textContent = 'Tidak ada link';
-                    a.classList.add('text-muted');
+                // 🔥 KONDISI YANG KAMU MAU
+                if (!link || link === 'null' || link === '-') {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Tidak ada Link GDrive',
+                        text: 'Tidak ada link GDrive yang diupload untuk dokumen ini.',
+                    });
+                    return;
                 }
 
-                viewModal.show();
-            }catch(e){
-                console.error(e);
-                alert('Gagal mengambil data');
+                // fallback kalau user input tanpa http/https
+                if (!/^https?:\/\//i.test(link)) {
+                    link = 'https://' + link;
+                }
+
+                // buka di tab baru
+                window.open(link, '_blank');
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Gagal mengambil data perjalanan dinas.',
+                });
             }
         });
     });
+
 
     // Delete with SweetAlert2 if available (keputusan Anda: saya biarkan seperti ini)
     document.querySelectorAll('.btn-delete').forEach(btn => {

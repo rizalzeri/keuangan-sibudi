@@ -53,3 +53,51 @@
     </form>
   </div>
 </div>
+
+<!-- Modal: Edit Akun / BUMDes -->
+<div class="modal fade" id="modalAkunBumdes" tabindex="-1" aria-labelledby="modalAkunBumdesLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="akun-form">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalAkunBumdesLabel">Edit Profil BUMDes</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <div id="akun-form-errors" class="mb-2"></div>
+
+            <div class="mb-3">
+                <label for="akun-name" class="form-label">Nama Lengkap</label>
+                <input type="text" id="akun-name" name="name" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="akun-email" class="form-label">Email</label>
+                <input type="email" id="akun-email" name="email" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="akun-nama_bumdes" class="form-label">Nama BUMDes</label>
+                <input type="text" id="akun-nama_bumdes" name="nama_bumdes" class="form-control">
+            </div>
+
+            <div class="mb-3">
+                <label for="akun-alamat_bumdes" class="form-label">Alamat BUMDes</label>
+                <input type="text" id="akun-alamat_bumdes" name="alamat_bumdes" class="form-control">
+            </div>
+
+            <div class="mb-3">
+                <label for="akun-nomor_hukum_bumdes" class="form-label">Nomor Hukum BUMDes</label>
+                <input type="text" id="akun-nomor_hukum_bumdes" name="nomor_hukum_bumdes" class="form-control">
+            </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button id="akun-submit" type="submit" class="btn btn-primary">Simpan</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+ 

@@ -150,28 +150,33 @@ $(function () {
     });
 
     // VIEW (pakai td.eq)
+    // GANTI handler .btn-view yang lama dengan yang ini
     $tbody.on('click', '.btn-view', function () {
         const $tr = $(this).closest('tr');
 
-        // ambil kolom berdasar index (td.eq)
-        const pengirim = $tr.find('td').eq(1).text().trim() || '-';
-        const judul = $tr.find('td').eq(2).text().trim() || '-';
-        const isiHtml = $tr.find('td').eq(3).html().trim() || '-';
-        const link = $tr.find('td').eq(4).find('.row-link').text().trim() || '';
+        // Ambil link dari <span class="row-link d-none"> yang ada di kolom aksi
+        // (kode Anda sebelumnya menyimpan row-link di td terakhir, jadi ini cocok)
+        let link = $tr.find('.row-link').first().text().trim() || '';
 
-        $('#viewPengirim').text(pengirim);
-        $('#viewJudul').text(judul);
-        // tampilkan isi (html) supaya <br> tetap terlihat
-        $('#viewIsi').html(isiHtml === '' ? '-' : isiHtml);
-
-        if (link) {
-            $('#viewGDrive').attr('href', link).text('Buka Link').removeClass('text-muted');
-        } else {
-            $('#viewGDrive').attr('href', '#').text('Tidak ada link').addClass('text-muted');
+        // Normalisasi dan cek "tidak ada"
+        if (!link || link === 'null' || link === '-') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Tidak ada Link GDrive',
+                text: 'Tidak ada link GDrive yang diupload untuk dokumen ini.',
+            });
+            return;
         }
 
-        new bootstrap.Modal(document.getElementById('viewModal')).show();
+        // Jika user menyimpan link tanpa schema, tambahkan https:// sebagai fallback
+        if (!/^https?:\/\//i.test(link)) {
+            link = 'https://' + link;
+        }
+
+        // Buka di tab baru
+        window.open(link, '_blank');
     });
+
 
     // EDIT (pakai td.eq)
     $tbody.on('click', '.btn-edit', function () {

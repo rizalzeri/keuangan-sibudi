@@ -7,7 +7,7 @@ use App\Models\ArsipPersonalisasi;
 use App\Models\ArsipOtorisasiMengetahui;
 use App\Models\ArsipOtorisasiPersetujuan;
 use App\Models\ArsipKlasifikasiTransaksi;
-
+use Illuminate\Support\Facades\Auth;
 class ArsipKelolaAkunController extends Controller
 {
     public function index()
@@ -20,7 +20,36 @@ class ArsipKelolaAkunController extends Controller
             ->orderBy('id')
             ->get();
 
-        return view('spj.arsip_kelola_akun.index', compact('personalisasi','klasifikasi'));
+        // current authenticated user
+        $user = Auth::user();
+
+        return view('spj.arsip_kelola_akun.index', compact('personalisasi','klasifikasi','user'));
+    }
+
+    // New: return current user (JSON) — optional, UI sekarang juga membaca dari blade
+    public function getAccount()
+    {
+        $user = Auth::user();
+        return response()->json(['success' => true, 'data' => $user]);
+    }
+
+    // New: update current user's bumdes fields
+    public function updateAccount(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'nama_bumdes' => 'nullable|string|max:255',
+            'alamat_bumdes' => 'nullable|string|max:255',
+            'nomor_hukum_bumdes' => 'nullable|string|max:255',
+        ]);
+
+        $user = Auth::user();
+
+        // jika email berubah, pastikan tidak menabrak unique (opsional: tambahkan unique rule jika perlu)
+        $user->update($data);
+
+        return response()->json(['success' => true, 'data' => $user]);
     }
 
     // ---------------- Personalisasi CRUD ----------------
