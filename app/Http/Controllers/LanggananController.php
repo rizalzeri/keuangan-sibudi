@@ -165,10 +165,11 @@ class LanggananController extends Controller
                 ]);
             }
 
-            return redirect('/')->with(
+            return redirect('/spj')->with(
                 'success',
                 'Pembayaran berhasil, langganan aktif sampai ' . $langganan_baru->translatedFormat('d F Y')
             );
+
         }
 
         // Kalau status lain (expire, cancel, failure)

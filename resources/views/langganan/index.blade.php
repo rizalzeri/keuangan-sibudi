@@ -289,60 +289,45 @@
                     method: 'POST',
                     data: $(this).serialize(),
                     success: function(response) {
-                        window.location.href = response.redirect_url;
-                        // Menggunakan token dari respons untuk memulai pembayaran
-                        // window.snap.pay(response.snapToken, {
-                        //     onSuccess: function(result) {
-                        //         alert("Pembayaran berhasil");
+                        console.log('createTransaction response:', response);
 
-                        //         // Ambil durasi dari radio yang dipilih
-                        //         var selectedDays = $('#subscription_duration')
-                        //             .val();
+                        // jika Midtrans mengembalikan redirect_url (umumnya untuk direct redirect)
+                        if (response.redirect_url) {
+                            window.location.href = response.redirect_url;
+                            return;
+                        }
 
-                        //         console.log(selectedDays);
+                        // jika mengembalikan snap_token (token), gunakan Snap.js
+                        if (response.snap_token) {
+                            // pastikan snap.js sudah dipanggil pada page dengan data-client-key
+                            window.snap.pay(response.snap_token, {
+                                onSuccess: function(result) {
+                                    // arahkan setelah sukses atau panggil server untuk marked paid
+                                    location.href = '/';
+                                },
+                                onPending: function(result) {
+                                    alert('Pembayaran menunggu konfirmasi.');
+                                },
+                                onError: function(result) {
+                                    alert('Gagal saat proses pembayaran.');
+                                    console.error(result);
+                                }
+                            });
+                            return;
+                        }
 
-
-                        //         // Kirim data pembayaran ke server setelah pembayaran berhasil
-                        //         $.post('/langganan/berhasil', {
-                        //             _token: '{{ csrf_token() }}',
-                        //             transaction_id: result.transaction_id,
-                        //             days: selectedDays
-                        //         }).done(function(response) {
-                        //             console.log("Success:",
-                        //                 response); // Log respons
-                        //             window.location.href =
-                        //                 "/"; // Redirect setelah berhasil
-                        //         }).fail(function(jqXHR, textStatus,
-                        //             errorThrown) {
-                        //             console.error("Error:", textStatus,
-                        //                 errorThrown); // Log kesalahan
-                        //             alert(
-                        //                 "Terjadi kesalahan saat memproses pembayaran."
-                        //             );
-                        //         });
-
-                        //     },
-                        //     onPending: function(result) {
-                        //         alert("Menunggu pembayaran");
-                        //         console.log(result);
-                        //     },
-                        //     onError: function(result) {
-                        //         alert("Pembayaran gagal");
-                        //         console.log(result);
-                        //     },
-                        //     onClose: function() {
-                        //         alert(
-                        //             "Anda menutup pop-up tanpa menyelesaikan pembayaran"
-                        //         );
-                        //     }
-                        // });
+                        // fallback: jika tidak ada redirect_url atau token
+                        alert('Transaksi berhasil dibuat tetapi tidak ada instruksi pembayaran.');
                     },
                     error: function(xhr, status, error) {
-                        alert('Terjadi kesalahan saat memproses pembayaran.');
-                        console.error(error);
+                        // tampilkan pesan error server jika ada
+                        var serverMsg = xhr.responseJSON?.message || xhr.responseText || error || 'Terjadi kesalahan saat memproses pembayaran.';
+                        console.error('AJAX error:', xhr, status, error);
+                        alert(serverMsg);
                     }
                 });
             });
+
         });
     </script>
 

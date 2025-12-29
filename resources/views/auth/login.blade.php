@@ -115,6 +115,12 @@
                                         <h5 class="card-title text-center pb-0 fs-4">Silahkan Login Akun Anda</h5>
                                         <p class="text-center small">Masukan Email dan Password Anda</p>
                                     </div>
+                                    @if(session('success'))
+                                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                        {{ session('success') }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                    @endif
 
                                     <form method="POST" action="{{ route('login') }}">
                                         @csrf
@@ -156,10 +162,7 @@
                                         </div>
                                     </form>
                                     <div class="col-12 mt-3">
-                                        <p class="small mb-0">Tidak punya akun? <a target="_blank"
-                                                href="https://wa.me/6282247758730?text=Pengajuan%20Pembuatan%20Akun%0ASilakan%20isi%20data%20berikut%3A%0A%0A-%20Nama%20Operator%20%3A%0A-%20Kabupaten%20%3A%0A-%20Kecamatan%20%3A%0A-%20Desa%20%3A%0A-%20No.%20WA%20%3A%0A-%20Email%20%3A">Buat
-                                                akun
-                                                baru</a></p>
+                                        <p class="small mb-0">Tidak punya akun? <a href="{{ url('/admin/data-user/create') }}">Buat akun baru</a></p>
                                     </div>
                                     <hr>
                                     <div class="text-center mt-3">

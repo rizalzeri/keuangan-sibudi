@@ -79,7 +79,18 @@ class ArsipKelolaAkunController extends Controller
     public function destroyPersonalisasi($id)
     {
         $item = ArsipPersonalisasi::findOrFail($id);
+
+        $dipakaiMengetahui = ArsipOtorisasiMengetahui::where('arsip_personalisasi_id', $id)->exists();
+        $dipakaiPersetujuan = ArsipOtorisasiPersetujuan::where('arsip_personalisasi_id', $id)->exists();
+
+        if ($dipakaiMengetahui || $dipakaiPersetujuan) {
+            return response()->json([
+                'message' => 'Personalisasi tidak dapat dihapus karena masih digunakan pada klasifikasi transaksi sebagai Mengetahui atau Persetujuan.'
+            ], 422);
+        }
+
         $item->delete();
+
         return response()->json(['success' => true]);
     }
 

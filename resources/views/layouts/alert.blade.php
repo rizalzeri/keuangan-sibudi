@@ -38,15 +38,3 @@
     $neracaSeimbang = formatRupiah($aktiva) === formatRupiah($passiva);
 @endphp
 
-@can('bumdes')
-    <div class="alert {{ $neracaSeimbang ? 'alert-success' : 'alert-danger' }} alert-dismissible fade show" role="alert">
-        @if (!$neracaSeimbang)
-            <span>Neraca Belum Seimbang. Mohon periksa setiap akun |</span>
-        @endif
-
-        <strong> Aktiva: </strong> {{ formatRupiah($aktiva) }} |
-        <strong> Passiva: </strong> {{ formatRupiah($passiva) }}
-
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-@endcan

@@ -14,7 +14,7 @@ class IsAdmin
         }
 
         $role = auth()->user()->user_roles_id;
-
+        
         // Jika role = 1 → ADMIN → lanjut ke halaman admin
         if ($role == 1) {
             return $next($request);

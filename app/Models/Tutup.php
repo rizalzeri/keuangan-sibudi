@@ -13,8 +13,15 @@ class Tutup extends Model
 
     public function scopeUser($query)
     {
-        return $query->where('user_id', auth()->user()->id);
+        $userId = auth()->id(); // lebih aman: mengembalikan null jika guest
+        if (! $userId) {
+            // Tidak ada user -> kembalikan query tanpa filter (no-op)
+            return $query;
+        }
+
+        return $query->where('user_id', $userId);
     }
+
 
     protected $casts = [
         'created_at' => 'datetime:Y-m-d H:i:s',

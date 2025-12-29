@@ -139,7 +139,7 @@ class AuthenticatesUsersTest extends TestCase
         $this->assertInstanceOf(ValidationException::class, $response->exception);
         $this->assertSame([
             'email' => [
-                'These credentials do not match our records.',
+                'Username atau Password Salah',
             ],
         ], $response->exception->errors());
     }
