@@ -29,7 +29,20 @@
 
         .header-left { position: absolute; left: 48px; top: 28px; font-size: 14px; }
         .header-right { position: absolute; right: 48px; top: 28px; font-size: 14px; text-align: right; }
-        .title { margin-top: 90px; text-align: center; font-size: 44px; font-weight: 800; text-decoration: underline; }
+        .title {
+            margin-top: 90px;
+            text-align: center;
+        }
+        .title-text {
+            font-size: 44px;
+            font-weight: 800;
+            display: inline-block;          /* buat border hanya selebar teks */
+            padding-bottom: 8px;            /* ruang antara teks dan garis */
+            border-bottom: 3px solid #000;  /* garis bawah yang konsisten */
+            line-height: 1.1;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
         .content { margin-top: 40px; padding: 0 40px; }
         .line-row { display: flex; margin: 12px 0; font-size: 20px; }
         .label { width: 250px; font-weight: 600; }
@@ -143,7 +156,7 @@
             <span style="text-decoration: underline dotted;">Nomor {{ $nomor_dokumen }}</span>
         </div>
 
-        <div class="title">BUKTI KAS MASUK</div>
+        <div class="title"><span class="title-text">BUKTI KAS MASUK</span></div>
 
         <div class="content">
             <div class="line-row">

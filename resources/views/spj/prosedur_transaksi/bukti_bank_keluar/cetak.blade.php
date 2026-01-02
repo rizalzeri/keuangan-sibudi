@@ -29,7 +29,23 @@
 
         .header-left { position: absolute; left: 48px; top: 28px; font-size: 14px; }
         .header-right { position: absolute; right: 48px; top: 28px; font-size: 14px; text-align: right; }
-        .title { margin-top: 90px; text-align: center; font-size: 44px; font-weight: 800; text-decoration: underline; }
+
+        /* ===== MODIFIED: gunakan border-bottom pada span agar underline selalu bawah, bukan tengah ===== */
+        .title {
+            margin-top: 90px;
+            text-align: center;
+        }
+        .title-text {
+            font-size: 44px;
+            font-weight: 800;
+            display: inline-block;          /* buat border hanya selebar teks */
+            padding-bottom: 8px;            /* ruang antara teks dan garis */
+            border-bottom: 3px solid #000;  /* garis bawah yang konsisten */
+            line-height: 1.1;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+
         .content { margin-top: 40px; padding: 0 40px; }
         .line-row { display: flex; margin: 12px 0; font-size: 20px; }
         .label { width: 250px; font-weight: 600; }
@@ -142,7 +158,7 @@
             <span style="text-decoration: underline dotted;">Nomor {{ $nomor_dokumen }}</span>
         </div>
 
-        <div class="title">BUKTI BANK KELUAR</div>
+        <div class="title"><span class="title-text">BUKTI BANK KELUAR</span></div>
 
         <div class="content">
             <div class="line-row">
@@ -214,9 +230,6 @@
                 <!-- TITLE SEJAJAR DENGAN "Mengetahui" -->
                 <div class="sign-subtitle">........, {{ $tanggal_lokal }}</div>
                 <div class="sign-title">Penerima</div>
-
-                <!-- TANGGAL DI ATAS AREA TTD -->
-                
 
                 <!-- ruang nama di atas garis (opsional, tetap agar sejajar) -->
                 <div class="sign-name"></div>
