@@ -8,9 +8,16 @@ use Carbon\Carbon;
 
 class ArsipSopController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
-        $sops = ArsipSop::orderBy('id', 'asc')->get();
+        $sops = ArsipSop::where('users_id', auth()->id())
+            ->orderBy('id', 'asc')->get();
+
         return view('spj.arsip_sop.index', compact('sops'));
     }
 
@@ -18,7 +25,6 @@ class ArsipSopController extends Controller
     {
         $rules = [
             'nama_sop'      => 'required|string|max:255',
-            // nomor_dokumen tidak wajib saat create karena akan di-generate
             'nomor_dokumen' => 'nullable|string|max:255',
             'ruang_lingkup' => 'nullable|string|max:255',
             'status'        => 'nullable|in:Berlaku,Tidak Berlaku',
@@ -27,22 +33,22 @@ class ArsipSopController extends Controller
 
         $validated = $request->validate($rules);
 
-        // Set default status jika tidak dikirim
         if (!isset($validated['status']) || !$validated['status']) {
             $validated['status'] = 'Berlaku';
         }
 
-        // Jika nomor_dokumen tidak diberikan (create) -> generate otomatis
         if (empty($validated['nomor_dokumen'])) {
             $now = Carbon::now();
             $year = $now->year;
             $month = $now->month;
-            // hitung berapa surat pada tahun yang sama (menggunakan created_at)
-            $countThisYear = ArsipSop::whereYear('created_at', $year)->count();
+            $countThisYear = ArsipSop::where('users_id', auth()->id())
+                ->whereYear('created_at', $year)->count();
             $no = $countThisYear + 1;
             $monthRoman = $this->monthToRoman($month);
             $validated['nomor_dokumen'] = "SOP/{$no}/{$monthRoman}/{$year}";
         }
+
+        $validated['users_id'] = auth()->id();
 
         $sop = ArsipSop::create($validated);
 
@@ -69,15 +75,17 @@ class ArsipSopController extends Controller
 
         $validated = $request->validate($rules);
 
-        $sop = ArsipSop::find($id);
+        $sop = ArsipSop::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$sop) {
             if ($request->ajax()) {
-                return response()->json(['success'=>false,'message'=>"SOP dengan ID $id tidak ditemukan"], 404);
+                return response()->json(['success'=>false,'message'=>"SOP dengan ID $id tidak ditemukan atau bukan milik Anda"], 404);
             }
-            return back()->with('error', "SOP dengan ID $id tidak ditemukan");
+            return back()->with('error', "SOP dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
-        // Jika nomor tidak dikirim (atau kosong) -> jangan overwrite nomor lama
         if (empty($validated['nomor_dokumen'])) {
             unset($validated['nomor_dokumen']);
         }
@@ -97,12 +105,15 @@ class ArsipSopController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $sop = ArsipSop::find($id);
+        $sop = ArsipSop::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$sop) {
             if ($request->ajax()) {
-                return response()->json(['success'=>false,'message'=>"SOP dengan ID $id tidak ditemukan"], 404);
+                return response()->json(['success'=>false,'message'=>"SOP dengan ID $id tidak ditemukan atau bukan milik Anda"], 404);
             }
-            return back()->with('error', "SOP dengan ID $id tidak ditemukan");
+            return back()->with('error', "SOP dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
         $sop->delete();
@@ -114,9 +125,6 @@ class ArsipSopController extends Controller
         return back()->with('success', 'SOP berhasil dihapus!');
     }
 
-    /**
-     * Helper: konversi bulan (1-12) ke angka Romawi
-     */
     private function monthToRoman($month)
     {
         $map = [

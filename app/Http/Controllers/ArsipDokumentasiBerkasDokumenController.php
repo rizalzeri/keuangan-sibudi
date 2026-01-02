@@ -8,9 +8,15 @@ use Illuminate\Support\Collection;
 
 class ArsipDokumentasiBerkasDokumenController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
-        $items = ArsipDokumentasiBerkasDokumen::orderBy('tanggal_berkas_dokumen','desc')->get();
+        $items = ArsipDokumentasiBerkasDokumen::where('users_id', auth()->id())
+            ->orderBy('tanggal_berkas_dokumen','desc')->get();
 
         // ambil daftar tahun unik untuk filter (server-side)
         $years = $items->map(function($it){
@@ -29,6 +35,8 @@ class ArsipDokumentasiBerkasDokumenController extends Controller
         ];
 
         $validated = $request->validate($rules);
+
+        $validated['users_id'] = auth()->id();
 
         $item = ArsipDokumentasiBerkasDokumen::create($validated);
 
@@ -49,10 +57,13 @@ class ArsipDokumentasiBerkasDokumenController extends Controller
 
         $validated = $request->validate($rules);
 
-        $item = ArsipDokumentasiBerkasDokumen::find($id);
+        $item = ArsipDokumentasiBerkasDokumen::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$item) {
-            if ($request->ajax()) return response()->json(['success'=>false,'message'=>"Item $id tidak ditemukan"],404);
-            return back()->with('error',"Item $id tidak ditemukan");
+            if ($request->ajax()) return response()->json(['success'=>false,'message'=>"Item $id tidak ditemukan atau bukan milik Anda"],404);
+            return back()->with('error',"Item $id tidak ditemukan atau bukan milik Anda");
         }
 
         $item->update($validated);
@@ -64,10 +75,13 @@ class ArsipDokumentasiBerkasDokumenController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $item = ArsipDokumentasiBerkasDokumen::find($id);
+        $item = ArsipDokumentasiBerkasDokumen::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$item) {
-            if ($request->ajax()) return response()->json(['success'=>false,'message'=>"Item $id tidak ditemukan"],404);
-            return back()->with('error',"Item $id tidak ditemukan");
+            if ($request->ajax()) return response()->json(['success'=>false,'message'=>"Item $id tidak ditemukan atau bukan milik Anda"],404);
+            return back()->with('error',"Item $id tidak ditemukan atau bukan milik Anda");
         }
 
         $item->delete();

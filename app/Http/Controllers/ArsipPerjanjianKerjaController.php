@@ -5,12 +5,19 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ArsipPerjanjianKerja;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class ArsipPerjanjianKerjaController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
-        $items = ArsipPerjanjianKerja::orderBy('id', 'asc')->get();
+        $items = ArsipPerjanjianKerja::where('users_id', auth()->id())
+            ->orderBy('id', 'asc')->get();
         return view('spj.arsip_perjanjian_kerja.index', compact('items'));
     }
 
@@ -28,21 +35,22 @@ class ArsipPerjanjianKerjaController extends Controller
 
         $validated = $request->validate($rules);
 
-        // jika durasi kosong -> set default 'Berjalan'
         if (empty($validated['durasi'])) {
             $validated['durasi'] = 'Berjalan';
         }
 
-        // jika nomor tidak dikirim, generate otomatis: PKS/{no}/{ROMAWI}/{tahun}
         if (empty($validated['nomor_dokumen'])) {
             $now = Carbon::now();
             $year = $now->year;
             $month = $now->month;
-            $countThisYear = ArsipPerjanjianKerja::whereYear('created_at', $year)->count();
+            $countThisYear = ArsipPerjanjianKerja::where('users_id', auth()->id())
+                ->whereYear('created_at', $year)->count();
             $no = $countThisYear + 1;
             $monthRoman = $this->monthToRoman($month);
             $validated['nomor_dokumen'] = "PKS/{$no}/{$monthRoman}/{$year}";
         }
+
+        $validated['users_id'] = auth()->id();
 
         $item = ArsipPerjanjianKerja::create($validated);
 
@@ -67,15 +75,16 @@ class ArsipPerjanjianKerjaController extends Controller
 
         $validated = $request->validate($rules);
 
-        $item = ArsipPerjanjianKerja::find($id);
+        $item = ArsipPerjanjianKerja::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$item) {
-            if ($request->ajax()) return response()->json(['success' => false, 'message' => "Perjanjian kerja dengan ID $id tidak ditemukan"], 404);
-            return back()->with('error', "Perjanjian kerja dengan ID $id tidak ditemukan");
+            if ($request->ajax()) return response()->json(['success' => false, 'message' => "Perjanjian kerja dengan ID $id tidak ditemukan atau bukan milik Anda"], 404);
+            return back()->with('error', "Perjanjian kerja dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
-        // jangan overwrite nomor jika tidak dikirim
         if (empty($validated['nomor_dokumen'])) unset($validated['nomor_dokumen']);
-        // jangan overwrite durasi jika tidak dikirim
         if (!array_key_exists('durasi', $validated) || empty($validated['durasi'])) unset($validated['durasi']);
 
         $item->update($validated);
@@ -86,10 +95,13 @@ class ArsipPerjanjianKerjaController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $item = ArsipPerjanjianKerja::find($id);
+        $item = ArsipPerjanjianKerja::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$item) {
-            if ($request->ajax()) return response()->json(['success' => false, 'message' => "Perjanjian kerja dengan ID $id tidak ditemukan"], 404);
-            return back()->with('error', "Perjanjian kerja dengan ID $id tidak ditemukan");
+            if ($request->ajax()) return response()->json(['success' => false, 'message' => "Perjanjian kerja dengan ID $id tidak ditemukan atau bukan milik Anda"], 404);
+            return back()->with('error', "Perjanjian kerja dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
         $item->delete();
@@ -98,15 +110,13 @@ class ArsipPerjanjianKerjaController extends Controller
         return back()->with('success', 'Perjanjian kerja berhasil dihapus!');
     }
 
-    /**
-     * Tandai selesai (aksi dari tombol checklist)
-     */
     public function complete(Request $request, $id)
     {
-        $item = ArsipPerjanjianKerja::find($id);
-        if (!$item) {
-            return response()->json(['success' => false, 'message' => "Perjanjian kerja dengan ID $id tidak ditemukan"], 404);
-        }
+        $item = ArsipPerjanjianKerja::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
+        if (!$item) return response()->json(['success' => false, 'message' => "Perjanjian kerja dengan ID $id tidak ditemukan atau bukan milik Anda"], 404);
 
         $item->durasi = 'Selesai';
         $item->save();
@@ -114,9 +124,6 @@ class ArsipPerjanjianKerjaController extends Controller
         return response()->json(['success' => true, 'message' => 'Perjanjian kerja ditandai Selesai', 'data' => $item]);
     }
 
-    /**
-     * Helper: konversi bulan (1-12) ke angka Romawi
-     */
     private function monthToRoman($month)
     {
         $map = [1=>'I',2=>'II',3=>'III',4=>'IV',5=>'V',6=>'VI',7=>'VII',8=>'VIII',9=>'IX',10=>'X',11=>'XI',12=>'XII'];

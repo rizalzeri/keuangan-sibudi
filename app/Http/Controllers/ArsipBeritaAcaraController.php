@@ -5,12 +5,20 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ArsipBeritaAcara;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class ArsipBeritaAcaraController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
-        $items = ArsipBeritaAcara::orderBy('id', 'asc')->get();
+        $items = ArsipBeritaAcara::where('users_id', auth()->id())
+            ->orderBy('id', 'asc')->get();
+
         return view('spj.arsip_berita_acara.index', compact('items'));
     }
 
@@ -26,17 +34,18 @@ class ArsipBeritaAcaraController extends Controller
 
         $validated = $request->validate($rules);
 
-        // Jika nomor tidak dikirim, generate otomatis dengan format BA/{no}/{ROMAWI}/{tahun}
         if (empty($validated['nomor_dokumen'])) {
             $now = Carbon::now();
             $year = $now->year;
             $month = $now->month;
-            // hitung jumlah record pada tahun yang sama -> nomor = count + 1
-            $countThisYear = ArsipBeritaAcara::whereYear('created_at', $year)->count();
+            $countThisYear = ArsipBeritaAcara::where('users_id', auth()->id())
+                ->whereYear('created_at', $year)->count();
             $no = $countThisYear + 1;
             $monthRoman = $this->monthToRoman($month);
             $validated['nomor_dokumen'] = "BA/{$no}/{$monthRoman}/{$year}";
         }
+
+        $validated['users_id'] = auth()->id();
 
         $ba = ArsipBeritaAcara::create($validated);
 
@@ -63,15 +72,17 @@ class ArsipBeritaAcaraController extends Controller
 
         $validated = $request->validate($rules);
 
-        $ba = ArsipBeritaAcara::find($id);
+        $ba = ArsipBeritaAcara::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$ba) {
             if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => "Berita acara dengan ID $id tidak ditemukan"], 404);
+                return response()->json(['success' => false, 'message' => "Berita acara dengan ID $id tidak ditemukan atau bukan milik Anda"], 404);
             }
-            return back()->with('error', "Berita acara dengan ID $id tidak ditemukan");
+            return back()->with('error', "Berita acara dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
-        // Jika nomor tidak dikirim (atau kosong) -> jangan overwrite nomor lama
         if (empty($validated['nomor_dokumen'])) {
             unset($validated['nomor_dokumen']);
         }
@@ -91,12 +102,15 @@ class ArsipBeritaAcaraController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $ba = ArsipBeritaAcara::find($id);
+        $ba = ArsipBeritaAcara::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$ba) {
             if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => "Berita acara dengan ID $id tidak ditemukan"], 404);
+                return response()->json(['success' => false, 'message' => "Berita acara dengan ID $id tidak ditemukan atau bukan milik Anda"], 404);
             }
-            return back()->with('error', "Berita acara dengan ID $id tidak ditemukan");
+            return back()->with('error', "Berita acara dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
         $ba->delete();
@@ -108,9 +122,6 @@ class ArsipBeritaAcaraController extends Controller
         return back()->with('success', 'Berita acara berhasil dihapus!');
     }
 
-    /**
-     * Helper: konversi bulan (1-12) ke angka Romawi
-     */
     private function monthToRoman($month)
     {
         $map = [

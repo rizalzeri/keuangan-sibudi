@@ -9,10 +9,7 @@ class ArsipBankMasuk extends Model
 {
     use HasFactory;
 
-    // nama tabel (sesuaikan jika berbeda)
     protected $table = 'arsip_bank_masuk';
-
-    // bila kolom timestamp bernama created_date / updated_date
     public $timestamps = true;
 
     protected $fillable = [
@@ -28,12 +25,17 @@ class ArsipBankMasuk extends Model
         'dokumen_pendukung',
         'link_gdrive',
         'catatan',
+        'users_id',
     ];
 
-    // casting
     protected $casts = [
         'dokumen_pendukung' => 'array',
         'tanggal_transaksi' => 'date',
         'nominal' => 'decimal:2',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'users_id');
+    }
 }

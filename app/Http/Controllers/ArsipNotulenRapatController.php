@@ -6,11 +6,18 @@ use Illuminate\Http\Request;
 use App\Models\ArsipNotulenRapat;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+
 class ArsipNotulenRapatController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
-        $items = ArsipNotulenRapat::orderBy('id', 'desc')->get();
+        $items = ArsipNotulenRapat::where('users_id', auth()->id())
+            ->orderBy('id', 'desc')->get();
         return view('spj.arsip_notulen_rapat.index', compact('items'));
     }
 
@@ -26,6 +33,7 @@ class ArsipNotulenRapatController extends Controller
         ];
 
         $validated = $request->validate($rules);
+        $validated['users_id'] = auth()->id();
 
         $n = ArsipNotulenRapat::create($validated);
 
@@ -53,12 +61,15 @@ class ArsipNotulenRapatController extends Controller
 
         $validated = $request->validate($rules);
 
-        $n = ArsipNotulenRapat::find($id);
+        $n = ArsipNotulenRapat::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$n) {
             if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => "Notulen dengan ID $id tidak ditemukan"], 404);
+                return response()->json(['success' => false, 'message' => "Notulen dengan ID $id tidak ditemukan atau bukan milik Anda"], 404);
             }
-            return back()->with('error', "Notulen dengan ID $id tidak ditemukan");
+            return back()->with('error', "Notulen dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
         $n->update($validated);
@@ -72,12 +83,15 @@ class ArsipNotulenRapatController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $n = ArsipNotulenRapat::find($id);
+        $n = ArsipNotulenRapat::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$n) {
             if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => "Notulen dengan ID $id tidak ditemukan"], 404);
+                return response()->json(['success' => false, 'message' => "Notulen dengan ID $id tidak ditemukan atau bukan milik Anda"], 404);
             }
-            return back()->with('error', "Notulen dengan ID $id tidak ditemukan");
+            return back()->with('error', "Notulen dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
         $n->delete();
@@ -88,30 +102,27 @@ class ArsipNotulenRapatController extends Controller
 
         return back()->with('success', 'Notulen berhasil dihapus!');
     }
+
     public function cetak($id)
     {
-        // Ambil data notulen berdasarkan ID
-        $notulen = ArsipNotulenRapat::findOrFail($id);
+        $notulen = ArsipNotulenRapat::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->firstOrFail();
 
-        // Format tanggal dalam bahasa Indonesia
         $hari = Carbon::parse($notulen->tanggal_notulen_rapat)->locale('id')->isoFormat('dddd');
         $tanggal = Carbon::parse($notulen->tanggal_notulen_rapat)->format('d/m/Y');
 
-        // Data untuk PDF
         $data = [
             'hari' => ucfirst($hari),
             'tanggal' => $tanggal,
             'waktu' => $notulen->waktu ?? '-',
             'tempat' => $notulen->tempat ?? '-',
             'acara' => $notulen->agenda ?? '-',
-            // Anda bisa menambahkan data peserta jika ada
-            'peserta' => [], // Kosongkan jika tidak ada data peserta
+            'peserta' => [],
         ];
 
-        // Generate PDF
         $pdf = PDF::loadView('spj.arsip_notulen_rapat.cetak_pdf', $data);
 
-        // Download PDF
         return $pdf->download('notulen-rapat-' . $notulen->id . '.pdf');
     }
 }

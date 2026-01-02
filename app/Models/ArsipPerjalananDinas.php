@@ -14,14 +14,12 @@ class ArsipPerjalananDinas extends Model
         'kegiatan',
         'tempat',
         'tempat_2',
-        'transport', // disimpan sebagai JSON (array)
+        'transport',
         'link_gdrive',
-
-        // new fields
         'dasar_perjalanan_tugas',
         'pejabat_pemberi_tugas',
         'jabatan_pejabat',
-        'pegawai_personil', // JSON
+        'pegawai_personil',
         'maksud_perjalanan_tugas',
         'tujuan_1',
         'tujuan_2',
@@ -30,6 +28,7 @@ class ArsipPerjalananDinas extends Model
         'pembiayaan',
         'keterangan',
         'tempat_dikeluarkan',
+        'users_id',
     ];
 
     public $timestamps = true;
@@ -38,7 +37,11 @@ class ArsipPerjalananDinas extends Model
         'tanggal_perjalanan_dinas' => 'date',
         'pegawai_personil' => 'array',
         'transport' => 'array',
-        // pembiayaan sebagai float agar mudah formatting; atur sesuai kebutuhan
         'pembiayaan' => 'float',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'users_id');
+    }
 }

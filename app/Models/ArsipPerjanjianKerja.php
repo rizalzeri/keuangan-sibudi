@@ -16,7 +16,12 @@ class ArsipPerjanjianKerja extends Model
         'deskripsi',
         'durasi',
         'link_gdrive',
+        'users_id',
     ];
     public $timestamps = true;
 
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'users_id');
+    }
 }

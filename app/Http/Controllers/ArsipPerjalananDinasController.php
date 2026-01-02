@@ -10,9 +10,15 @@ use Illuminate\Support\Facades\Auth;
 
 class ArsipPerjalananDinasController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
-        $items = ArsipPerjalananDinas::orderBy('id', 'asc')->get();
+        $items = ArsipPerjalananDinas::where('users_id', auth()->id())
+            ->orderBy('id', 'asc')->get();
         return view('spj.arsip_perjalanan_dinas.index', compact('items'));
     }
 
@@ -24,13 +30,12 @@ class ArsipPerjalananDinasController extends Controller
             'kegiatan' => 'nullable|string|max:255',
             'tempat' => 'nullable|string|max:255',
             'tempat_2' => 'nullable|string|max:255',
-            'transport' => 'nullable', // will be JSON/array from client
+            'transport' => 'nullable',
             'link_gdrive' => 'nullable|string',
-            // new fields
             'dasar_perjalanan_tugas' => 'nullable|string',
             'pejabat_pemberi_tugas' => 'nullable|string|max:255',
             'jabatan_pejabat' => 'nullable|string|max:255',
-            'pegawai_personil' => 'nullable', // json/array
+            'pegawai_personil' => 'nullable',
             'maksud_perjalanan_tugas' => 'nullable|string',
             'tujuan_1' => 'nullable|string|max:255',
             'tujuan_2' => 'nullable|string|max:255',
@@ -43,18 +48,17 @@ class ArsipPerjalananDinasController extends Controller
 
         $validated = $request->validate($rules);
 
-        // nomor generate jika tidak dikirim
         if (empty($validated['nomor_dokumen'])) {
             $now = Carbon::now();
             $year = $now->year;
             $month = $now->month;
-            $countThisYear = ArsipPerjalananDinas::whereYear('created_at', $year)->count();
+            $countThisYear = ArsipPerjalananDinas::where('users_id', auth()->id())
+                ->whereYear('created_at', $year)->count();
             $no = $countThisYear + 1;
             $monthRoman = $this->monthToRoman($month);
             $validated['nomor_dokumen'] = "SPPD/{$no}/{$monthRoman}/{$year}";
         }
 
-        // Normalisasi pegawai_personil dan transport: jika datang sebagai JSON string, decode; jika array, keep.
         if (isset($validated['pegawai_personil']) && is_string($validated['pegawai_personil'])) {
             $decoded = json_decode($validated['pegawai_personil'], true);
             $validated['pegawai_personil'] = $decoded ?: null;
@@ -65,7 +69,7 @@ class ArsipPerjalananDinasController extends Controller
             $validated['transport'] = $decoded ?: null;
         }
 
-        // pembiayaan sudah numeric via validation
+        $validated['users_id'] = auth()->id();
 
         $pd = ArsipPerjalananDinas::create($validated);
 
@@ -90,7 +94,6 @@ class ArsipPerjalananDinasController extends Controller
             'tempat_2' => 'nullable|string|max:255',
             'transport' => 'nullable',
             'link_gdrive' => 'nullable|string',
-            // new fields
             'dasar_perjalanan_tugas' => 'nullable|string',
             'pejabat_pemberi_tugas' => 'nullable|string|max:255',
             'jabatan_pejabat' => 'nullable|string|max:255',
@@ -107,12 +110,15 @@ class ArsipPerjalananDinasController extends Controller
 
         $validated = $request->validate($rules);
 
-        $pd = ArsipPerjalananDinas::find($id);
+        $pd = ArsipPerjalananDinas::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$pd) {
             if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => "Perjalanan dinas dengan ID $id tidak ditemukan"], 404);
+                return response()->json(['success' => false, 'message' => "Perjalanan dinas dengan ID $id tidak ditemukan atau bukan milik Anda"], 404);
             }
-            return back()->with('error', "Perjalanan dinas dengan ID $id tidak ditemukan");
+            return back()->with('error', "Perjalanan dinas dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
         if (isset($validated['pegawai_personil']) && is_string($validated['pegawai_personil'])) {
@@ -140,24 +146,25 @@ class ArsipPerjalananDinasController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $pd = ArsipPerjalananDinas::find($id);
+        $pd = ArsipPerjalananDinas::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$pd) {
-            // gunakan expectsJson/wantsJson untuk mendeteksi permintaan AJAX/JSON
-            if ($request->expectsJson() || $request->wantsJson() || $request->ajax()) {
-                return response()->json(['success' => false, 'message' => "Perjalanan dinas dengan ID $id tidak ditemukan"], 404);
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => "Perjalanan dinas dengan ID $id tidak ditemukan atau bukan milik Anda"], 404);
             }
-            return back()->with('error', "Perjalanan dinas dengan ID $id tidak ditemukan");
+            return back()->with('error', "Perjalanan dinas dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
         $pd->delete();
 
-        if ($request->expectsJson() || $request->wantsJson() || $request->ajax()) {
+        if ($request->expectsJson() || $request->ajax()) {
             return response()->json(['success' => true, 'message' => 'Perjalanan dinas berhasil dihapus!']);
         }
 
         return back()->with('success', 'Perjalanan dinas berhasil dihapus!');
     }
-
 
     private function monthToRoman($month)
     {
@@ -170,10 +177,13 @@ class ArsipPerjalananDinasController extends Controller
     }
 
     public function generateDoc($id)
-    {   
-        $pd = ArsipPerjalananDinas::find($id);
+    {
+        $pd = ArsipPerjalananDinas::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$pd) {
-            abort(404, 'Data tidak ditemukan');
+            abort(404, 'Data tidak ditemukan atau bukan milik Anda');
         }
 
         $templatePath = public_path('assets/word/FORM SURAT PERINTAH PERJALANAN TUGAS.docx');
@@ -184,16 +194,13 @@ class ArsipPerjalananDinasController extends Controller
         try {
             $template = new TemplateProcessor($templatePath);
 
-            // tanggal format Indonesia: 01 Januari 2025
             $tanggal = $pd->tanggal_perjalanan_dinas
                 ? Carbon::parse($pd->tanggal_perjalanan_dinas)->locale('id')->translatedFormat('d F Y')
                 : '';
 
-            // ambil nama_bumdes dari user yang sedang login (fallback ke kosong bila tidak ada)
             $user = Auth::user();
             $nama_bumdes = $user ? ($user->nama_bumdes ?? '') : '';
 
-            // pegawai_personil: gunakan normalizePersonil untuk memastikan pasangan nama/jabatan
             $pegawaiLines = '';
             if (!empty($pd->pegawai_personil)) {
                 $normalized = $this->normalizePersonil($pd->pegawai_personil);
@@ -208,7 +215,6 @@ class ArsipPerjalananDinasController extends Controller
                 $pegawaiLines = implode("\n", $lines);
             }
 
-            // transport: jika array -> gabungkan
             $transportText = '';
             if (!empty($pd->transport) && is_array($pd->transport)) {
                 $items = [];
@@ -224,7 +230,6 @@ class ArsipPerjalananDinasController extends Controller
                 $transportText = implode(', ', array_filter($items));
             }
 
-            // mapping semua placeholder yang mungkin ada di template
             $map = [
                 'nomor_dokumen' => $pd->nomor_dokumen ?? '',
                 'kegiatan' => $pd->kegiatan ?? '',
@@ -244,7 +249,6 @@ class ArsipPerjalananDinasController extends Controller
                 'pembiayaan' => $pd->pembiayaan !== null ? number_format($pd->pembiayaan, 2, ',', '.') : '',
                 'keterangan' => $pd->keterangan ?? '',
                 'tempat_dikeluarkan' => $pd->tempat_dikeluarkan ?? '',
-                // tambahan: nama_bumdes dari users
                 'nama_bumdes' => $nama_bumdes,
             ];
 
@@ -259,30 +263,26 @@ class ArsipPerjalananDinasController extends Controller
             return response()->download($tmpFile, $filename)->deleteFileAfterSend(true);
 
         } catch (\Exception $e) {
-            // \Log::error($e);
             abort(500, 'Gagal meng-generate dokumen');
         }
     }
 
     public function show($id)
     {
-        $pd = ArsipPerjalananDinas::find($id);
+        $pd = ArsipPerjalananDinas::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$pd) {
-            return response()->json(['success'=>false, 'message'=>'Not found'], 404);
+            return response()->json(['success' => false, 'message' => 'Not found or not yours'], 404);
         }
 
-        // pastikan pegawai_personil sudah dinormalisasi sebelum dikirim ke client
         $pd->pegawai_personil = $this->normalizePersonil($pd->pegawai_personil);
 
         return response()->json($pd);
     }
 
-    /**
-     * Normalisasi pegawai_personil yang mungkin disimpan dalam berbagai bentuk:
-     * - already [ {nama:.., jabatan:..}, {...} ]
-     * - or [ {nama:..}, {jabatan:..}, {nama:..}, {jabatan:..} ]
-     * - or numeric-indexed [ ['Rizal','Direktur'], ... ]
-     */
+    // normalizePersonil() same as before (copy/paste)
     private function normalizePersonil($arr)
     {
         if (empty($arr) || !is_array($arr)) return [];
@@ -293,14 +293,12 @@ class ArsipPerjalananDinasController extends Controller
         foreach ($arr as $it) {
             if ($it === null) continue;
 
-            // case: numeric indexed row like ['Rizal','Direktur']
             if (is_array($it) && array_key_exists(0, $it) && array_key_exists(1, $it)) {
                 $out[] = ['nama' => $it[0], 'jabatan' => $it[1]];
                 $temp = [];
                 continue;
             }
 
-            // case: object-like associative ['nama'=>.., 'jabatan'=>..]
             if (is_array($it) && (isset($it['nama']) || isset($it['jabatan']) || isset($it[0]) || isset($it[1]))) {
                 $nama = isset($it['nama']) ? $it['nama'] : (isset($it[0]) ? $it[0] : null);
                 $jabatan = isset($it['jabatan']) ? $it['jabatan'] : (isset($it[1]) ? $it[1] : null);
@@ -311,10 +309,8 @@ class ArsipPerjalananDinasController extends Controller
                     continue;
                 }
 
-                // if only nama or only jabatan
                 if ($nama !== null && $jabatan === null) {
                     if (!empty($temp) && !isset($temp['nama']) && isset($temp['jabatan'])) {
-                        // previous had jabatan only, combine
                         $out[] = ['nama' => $nama, 'jabatan' => $temp['jabatan']];
                         $temp = [];
                     } else {
@@ -329,7 +325,6 @@ class ArsipPerjalananDinasController extends Controller
 
                 if ($jabatan !== null && $nama === null) {
                     if (!empty($temp) && !isset($temp['jabatan']) && isset($temp['nama'])) {
-                        // previous had nama only, combine
                         $out[] = ['nama' => $temp['nama'], 'jabatan' => $jabatan];
                         $temp = [];
                     } else {
@@ -343,7 +338,6 @@ class ArsipPerjalananDinasController extends Controller
                 }
             }
 
-            // fallback: if scalar string, treat as name or job depending on temp
             if (is_string($it)) {
                 if (!isset($temp['nama'])) {
                     $temp['nama'] = $it;
@@ -352,19 +346,14 @@ class ArsipPerjalananDinasController extends Controller
                     $out[] = $temp;
                     $temp = [];
                 } else {
-                    // push and reset
                     $out[] = $temp;
                     $temp = ['nama' => $it];
                 }
             }
         }
 
-        if (!empty($temp)) {
-            // push remaining pair or single
-            $out[] = $temp;
-        }
+        if (!empty($temp)) $out[] = $temp;
 
-        // Normalize keys: ensure both nama and jabatan exist (jabatan may be empty)
         $out = array_map(function($p){
             return [
                 'nama' => isset($p['nama']) ? $p['nama'] : (isset($p[0]) ? $p[0] : null),
@@ -374,5 +363,4 @@ class ArsipPerjalananDinasController extends Controller
 
         return $out;
     }
-
 }

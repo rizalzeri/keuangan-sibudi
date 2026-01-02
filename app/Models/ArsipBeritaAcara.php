@@ -14,6 +14,7 @@ class ArsipBeritaAcara extends Model
         'tanggal_peristiwa',
         'deskripsi',
         'link_gdrive',
+        'users_id',
     ];
     public $timestamps = true;
 
@@ -21,4 +22,8 @@ class ArsipBeritaAcara extends Model
         'tanggal_peristiwa' => 'date',
     ];
 
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'users_id');
+    }
 }

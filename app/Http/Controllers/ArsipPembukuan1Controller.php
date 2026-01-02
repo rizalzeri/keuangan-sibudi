@@ -10,8 +10,16 @@ use App\Models\ArsipBankKeluar;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\ArsipPersonalisasi;
+use Illuminate\Support\Facades\Auth;
+
 class ArsipPembukuan1Controller extends Controller
 {
+    public function __construct()
+    {
+        // pastikan user login
+        $this->middleware('auth');
+    }
+
     // Sample dataset (replace with DB later)
     public function index(Request $request)
     {
@@ -28,12 +36,14 @@ class ArsipPembukuan1Controller extends Controller
         ];
         $selectedType = $request->query('type', 'Semua');
 
-        // ambil list tahun yang ada di ke-4 tabel (unik)
+        $userId = auth()->id();
+
+        // ambil list tahun yang ada di ke-4 tabel (unik) — hanya milik user saat ini
         $years = collect([
-            DB::table('arsip_bank_masuk')->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
-            DB::table('arsip_bank_keluar')->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
-            DB::table('arsip_kas_masuk')->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
-            DB::table('arsip_kas_keluar')->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
+            DB::table('arsip_bank_masuk')->where('users_id', $userId)->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
+            DB::table('arsip_bank_keluar')->where('users_id', $userId)->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
+            DB::table('arsip_kas_masuk')->where('users_id', $userId)->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
+            DB::table('arsip_kas_keluar')->where('users_id', $userId)->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
         ])->flatten()->unique()->filter()->sortDesc()->values()->all();
 
         // helper mapping untuk tiap model -> jenis & kode singkatan
@@ -55,8 +65,9 @@ class ArsipPembukuan1Controller extends Controller
                 continue;
             }
 
-            // ambil data untuk tahun yang dipilih
-            $collection = $model::whereYear('tanggal_transaksi', $selectedYear)
+            // ambil data untuk tahun yang dipilih - hanya milik user
+            $collection = $model::where('users_id', $userId)
+                ->whereYear('tanggal_transaksi', $selectedYear)
                 ->where('kategori_pembukuan', '1')
                 ->orderBy('tanggal_transaksi', 'asc')
                 ->orderBy('id', 'asc')
@@ -71,8 +82,8 @@ class ArsipPembukuan1Controller extends Controller
                     'id' => $rec->id,
                     'transaksi' => $rec->nama_transaksi,
                     'nomor' => $rec->nomor_dokumen,
-                    'tanggal' => $rec->tanggal_transaksi->format('Y-m-d'),        // nilai mentah
-                    'tanggal_display' => $rec->tanggal_transaksi->format('d-m-Y'), // tampilan di UI
+                    'tanggal' => $rec->tanggal_transaksi ? $rec->tanggal_transaksi->format('Y-m-d') : null,
+                    'tanggal_display' => $rec->tanggal_transaksi ? $rec->tanggal_transaksi->format('d-m-Y') : null,
                     'jenis' => $jenis,
                     'bukti' => $buktiDukung,
                     'link_drive' => $rec->link_gdrive ?? null,
@@ -93,7 +104,6 @@ class ArsipPembukuan1Controller extends Controller
             'selectedType' => $selectedType,
         ]);
     }
-
 
     private function monthToRoman(int $m): string
     {
@@ -123,6 +133,7 @@ class ArsipPembukuan1Controller extends Controller
     {
         $selectedYear = $request->query('year', date('Y'));
         $selectedType = $request->query('type', 'Semua');
+        $userId = auth()->id();
 
         $sources = [
             ['model' => ArsipBankMasuk::class, 'jenis' => 'Bukti Bank Masuk', 'abbr' => 'BBM'],
@@ -141,7 +152,8 @@ class ArsipPembukuan1Controller extends Controller
                 continue;
             }
 
-            $collection = $model::whereYear('tanggal_transaksi', $selectedYear)
+            $collection = $model::where('users_id', $userId)
+                ->whereYear('tanggal_transaksi', $selectedYear)
                 ->where('kategori_pembukuan', '1')
                 ->orderBy('tanggal_transaksi', 'asc')
                 ->orderBy('id', 'asc')
@@ -181,7 +193,6 @@ class ArsipPembukuan1Controller extends Controller
         return view('spj.arsip_pembukuan_1.rekap_print', $data);
     }
 
-
     public function delete(Request $request, $id)
     {
         $jenis = $request->input('jenis');
@@ -199,9 +210,10 @@ class ArsipPembukuan1Controller extends Controller
 
         $model = $modelMap[$jenis];
 
-        $record = $model::find($id);
+        // hanya boleh hapus jika owner (users_id == auth()->id())
+        $record = $model::where('id', $id)->where('users_id', auth()->id())->first();
         if(!$record){
-            return response()->json(['success'=>false, 'message'=>'Data tidak ditemukan']);
+            return response()->json(['success'=>false, 'message'=>'Data tidak ditemukan atau bukan milik Anda']);
         }
 
         try {

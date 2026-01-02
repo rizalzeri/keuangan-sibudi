@@ -7,10 +7,15 @@ use App\Models\ArsipDokumentasiFoto;
 
 class ArsipDokumentasiFotoController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
-        // ambil semua item, urut berdasarkan id
-        $items = ArsipDokumentasiFoto::orderBy('id', 'asc')->get();
+        $items = ArsipDokumentasiFoto::where('users_id', auth()->id())
+            ->orderBy('id', 'asc')->get();
         return view('spj.arsip_dokumentasi_foto.index', compact('items'));
     }
 
@@ -23,6 +28,8 @@ class ArsipDokumentasiFotoController extends Controller
         ];
 
         $validated = $request->validate($rules);
+
+        $validated['users_id'] = auth()->id();
 
         $item = ArsipDokumentasiFoto::create($validated);
 
@@ -47,12 +54,15 @@ class ArsipDokumentasiFotoController extends Controller
 
         $validated = $request->validate($rules);
 
-        $item = ArsipDokumentasiFoto::find($id);
+        $item = ArsipDokumentasiFoto::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$item) {
             if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => "Item dengan ID $id tidak ditemukan"], 404);
+                return response()->json(['success' => false, 'message' => "Item dengan ID $id tidak ditemukan atau bukan milik Anda"], 404);
             }
-            return back()->with('error', "Item dengan ID $id tidak ditemukan");
+            return back()->with('error', "Item dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
         $item->update($validated);
@@ -70,12 +80,15 @@ class ArsipDokumentasiFotoController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $item = ArsipDokumentasiFoto::find($id);
+        $item = ArsipDokumentasiFoto::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$item) {
             if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => "Item dengan ID $id tidak ditemukan"], 404);
+                return response()->json(['success' => false, 'message' => "Item dengan ID $id tidak ditemukan atau bukan milik Anda"], 404);
             }
-            return back()->with('error', "Item dengan ID $id tidak ditemukan");
+            return back()->with('error', "Item dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
         $item->delete();

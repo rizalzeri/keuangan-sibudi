@@ -8,32 +8,38 @@ use App\Models\ArsipOtorisasiMengetahui;
 use App\Models\ArsipOtorisasiPersetujuan;
 use App\Models\ArsipKlasifikasiTransaksi;
 use Illuminate\Support\Facades\Auth;
+
 class ArsipKelolaAkunController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
-        // Semua personalisasi (untuk dropdown)
-        $personalisasi = ArsipPersonalisasi::orderBy('id')->get();
+        $userId = auth()->id();
 
-        // Klasifikasi (dengan relasi otorisasi untuk menampilkan nama personalisasi)
-        $klasifikasi = ArsipKlasifikasiTransaksi::with(['mengetahui','persetujuan'])
+        // hanya ambil yang milik user saat ini
+        $personalisasi = ArsipPersonalisasi::where('users_id', $userId)
+            ->orderBy('id')->get();
+
+        $klasifikasi = ArsipKlasifikasiTransaksi::with(['mengetahui.personalisasi','persetujuan.personalisasi'])
+            ->where('users_id', $userId)
             ->orderBy('id')
             ->get();
 
-        // current authenticated user
         $user = Auth::user();
 
         return view('spj.arsip_kelola_akun.index', compact('personalisasi','klasifikasi','user'));
     }
 
-    // New: return current user (JSON) — optional, UI sekarang juga membaca dari blade
     public function getAccount()
     {
         $user = Auth::user();
         return response()->json(['success' => true, 'data' => $user]);
     }
 
-    // New: update current user's bumdes fields
     public function updateAccount(Request $request)
     {
         $data = $request->validate([
@@ -45,8 +51,6 @@ class ArsipKelolaAkunController extends Controller
         ]);
 
         $user = Auth::user();
-
-        // jika email berubah, pastikan tidak menabrak unique (opsional: tambahkan unique rule jika perlu)
         $user->update($data);
 
         return response()->json(['success' => true, 'data' => $user]);
@@ -60,6 +64,8 @@ class ArsipKelolaAkunController extends Controller
             'jabatan' => 'nullable|string|max:255',
         ]);
 
+        $data['users_id'] = auth()->id();
+
         $item = ArsipPersonalisasi::create($data);
         return response()->json(['success' => true, 'data' => $item]);
     }
@@ -71,14 +77,23 @@ class ArsipKelolaAkunController extends Controller
             'jabatan' => 'nullable|string|max:255',
         ]);
 
-        $item = ArsipPersonalisasi::findOrFail($id);
+        $item = ArsipPersonalisasi::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
+        if (!$item) {
+            return response()->json(['success' => false, 'message' => 'Personalisasi tidak ditemukan atau bukan milik Anda'], 404);
+        }
+
         $item->update($data);
         return response()->json(['success' => true, 'data' => $item]);
     }
 
     public function destroyPersonalisasi($id)
     {
-        $item = ArsipPersonalisasi::findOrFail($id);
+        $item = ArsipPersonalisasi::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->firstOrFail();
 
         $dipakaiMengetahui = ArsipOtorisasiMengetahui::where('arsip_personalisasi_id', $id)->exists();
         $dipakaiPersetujuan = ArsipOtorisasiPersetujuan::where('arsip_personalisasi_id', $id)->exists();
@@ -94,8 +109,7 @@ class ArsipKelolaAkunController extends Controller
         return response()->json(['success' => true]);
     }
 
-    // ---------------- Mengetahui / Persetujuan (CRUD tetap ada jika perlu) ----------------
-    // (kamu bisa tetap pakai endpoint ini, tapi UI sekarang menggunakan personalisasi langsung)
+    // ---------------- Mengetahui / Persetujuan (CRUD) ----------------
     public function storeMengetahui(Request $request)
     {
         $data = $request->validate([
@@ -103,7 +117,25 @@ class ArsipKelolaAkunController extends Controller
             'arsip_personalisasi_id' => 'required|exists:arsip_personalisasi,id',
         ]);
 
-        $item = ArsipOtorisasiMengetahui::create($data);
+        // pastikan personalisasi milik user
+        $pp = ArsipPersonalisasi::where('id', $data['arsip_personalisasi_id'])
+            ->where('users_id', auth()->id())
+            ->first();
+
+        if (!$pp) {
+            return response()->json(['success'=>false,'message'=>'Personalisasi tidak ditemukan atau bukan milik Anda'], 404);
+        }
+
+        $item = ArsipOtorisasiMengetahui::firstOrCreate(
+            [
+                'arsip_personalisasi_id' => $data['arsip_personalisasi_id'],
+                'users_id' => auth()->id()
+            ],
+            [
+                'kategori' => $data['kategori'] ?? null
+            ]
+        );
+
         return response()->json(['success' => true, 'data' => $item]);
     }
 
@@ -114,14 +146,32 @@ class ArsipKelolaAkunController extends Controller
             'arsip_personalisasi_id' => 'required|exists:arsip_personalisasi,id',
         ]);
 
-        $item = ArsipOtorisasiMengetahui::findOrFail($id);
-        $item->update($data);
+        $item = ArsipOtorisasiMengetahui::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
+        if (!$item) return response()->json(['success'=>false,'message'=>'Data tidak ditemukan atau bukan milik Anda'], 404);
+
+        // pastikan personalisasi milik user
+        $pp = ArsipPersonalisasi::where('id', $data['arsip_personalisasi_id'])
+            ->where('users_id', auth()->id())
+            ->first();
+        if (!$pp) return response()->json(['success'=>false,'message'=>'Personalisasi invalid'], 422);
+
+        $item->update([
+            'kategori' => $data['kategori'] ?? null,
+            'arsip_personalisasi_id' => $data['arsip_personalisasi_id']
+        ]);
+
         return response()->json(['success' => true, 'data' => $item]);
     }
 
     public function destroyMengetahui($id)
     {
-        $item = ArsipOtorisasiMengetahui::findOrFail($id);
+        $item = ArsipOtorisasiMengetahui::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->firstOrFail();
+
         $item->delete();
         return response()->json(['success' => true]);
     }
@@ -133,7 +183,19 @@ class ArsipKelolaAkunController extends Controller
             'arsip_personalisasi_id' => 'required|exists:arsip_personalisasi,id',
         ]);
 
-        $item = ArsipOtorisasiPersetujuan::create($data);
+        $pp = ArsipPersonalisasi::where('id', $data['arsip_personalisasi_id'])
+            ->where('users_id', auth()->id())
+            ->first();
+        if (!$pp) return response()->json(['success'=>false,'message'=>'Personalisasi invalid'], 422);
+
+        $item = ArsipOtorisasiPersetujuan::firstOrCreate(
+            [
+                'arsip_personalisasi_id' => $data['arsip_personalisasi_id'],
+                'users_id' => auth()->id()
+            ],
+            ['kategori' => $data['kategori'] ?? null]
+        );
+
         return response()->json(['success' => true, 'data' => $item]);
     }
 
@@ -144,14 +206,31 @@ class ArsipKelolaAkunController extends Controller
             'arsip_personalisasi_id' => 'required|exists:arsip_personalisasi,id',
         ]);
 
-        $item = ArsipOtorisasiPersetujuan::findOrFail($id);
-        $item->update($data);
+        $item = ArsipOtorisasiPersetujuan::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
+        if (!$item) return response()->json(['success'=>false,'message'=>'Data tidak ditemukan atau bukan milik Anda'], 404);
+
+        $pp = ArsipPersonalisasi::where('id', $data['arsip_personalisasi_id'])
+            ->where('users_id', auth()->id())
+            ->first();
+        if (!$pp) return response()->json(['success'=>false,'message'=>'Personalisasi invalid'], 422);
+
+        $item->update([
+            'kategori' => $data['kategori'] ?? null,
+            'arsip_personalisasi_id' => $data['arsip_personalisasi_id']
+        ]);
+
         return response()->json(['success' => true, 'data' => $item]);
     }
 
     public function destroyPersetujuan($id)
     {
-        $item = ArsipOtorisasiPersetujuan::findOrFail($id);
+        $item = ArsipOtorisasiPersetujuan::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->firstOrFail();
+
         $item->delete();
         return response()->json(['success' => true]);
     }
@@ -162,37 +241,38 @@ class ArsipKelolaAkunController extends Controller
         $data = $request->validate([
             'kategori' => 'nullable|string|max:255',
             'nominal' => 'required|numeric',
-            // these are personalisasi ids chosen from dropdown
             'mengetahui_personalisasi_id' => 'nullable|exists:arsip_personalisasi,id',
             'persetujuan_personalisasi_id' => 'nullable|exists:arsip_personalisasi,id',
         ]);
 
-        // buat / reuse Ot. Mengetahui
+        $userId = auth()->id();
+
+        // create/reuse otorisasi mengetahui (scoped to user)
         $mengetahuiId = null;
         if (!empty($data['mengetahui_personalisasi_id'])) {
             $men = ArsipOtorisasiMengetahui::firstOrCreate(
-                ['arsip_personalisasi_id' => $data['mengetahui_personalisasi_id']],
-                ['kategori' => null] // atau set kategori khusus jika mau
+                ['arsip_personalisasi_id' => $data['mengetahui_personalisasi_id'], 'users_id' => $userId],
+                ['kategori' => null]
             );
             $mengetahuiId = $men->id;
         }
 
-        // buat / reuse Ot. Persetujuan
+        // create/reuse otorisasi persetujuan (scoped to user)
         $persetujuanId = null;
         if (!empty($data['persetujuan_personalisasi_id'])) {
             $p = ArsipOtorisasiPersetujuan::firstOrCreate(
-                ['arsip_personalisasi_id' => $data['persetujuan_personalisasi_id']],
+                ['arsip_personalisasi_id' => $data['persetujuan_personalisasi_id'], 'users_id' => $userId],
                 ['kategori' => null]
             );
             $persetujuanId = $p->id;
         }
 
-        // simpan klasifikasi, simpan FK ke otorisasi yang telah dibuat/diambil
         $item = ArsipKlasifikasiTransaksi::create([
             'kategori' => $data['kategori'] ?? null,
             'nominal' => $data['nominal'],
             'arsip_otorisasi_mengetahui_id' => $mengetahuiId,
             'arsip_otorisasi_persetujuan_id' => $persetujuanId,
+            'users_id' => $userId,
         ]);
 
         return response()->json(['success' => true, 'data' => $item]);
@@ -207,13 +287,19 @@ class ArsipKelolaAkunController extends Controller
             'persetujuan_personalisasi_id' => 'nullable|exists:arsip_personalisasi,id',
         ]);
 
-        $item = ArsipKlasifikasiTransaksi::findOrFail($id);
+        $userId = auth()->id();
+
+        $item = ArsipKlasifikasiTransaksi::where('id', $id)
+            ->where('users_id', $userId)
+            ->first();
+
+        if (!$item) return response()->json(['success'=>false,'message'=>'Data tidak ditemukan atau bukan milik Anda'], 404);
 
         // process mengetahui
         $mengetahuiId = $item->arsip_otorisasi_mengetahui_id;
         if (!empty($data['mengetahui_personalisasi_id'])) {
             $men = ArsipOtorisasiMengetahui::firstOrCreate(
-                ['arsip_personalisasi_id' => $data['mengetahui_personalisasi_id']],
+                ['arsip_personalisasi_id' => $data['mengetahui_personalisasi_id'], 'users_id' => $userId],
                 ['kategori' => null]
             );
             $mengetahuiId = $men->id;
@@ -225,7 +311,7 @@ class ArsipKelolaAkunController extends Controller
         $persetujuanId = $item->arsip_otorisasi_persetujuan_id;
         if (!empty($data['persetujuan_personalisasi_id'])) {
             $p = ArsipOtorisasiPersetujuan::firstOrCreate(
-                ['arsip_personalisasi_id' => $data['persetujuan_personalisasi_id']],
+                ['arsip_personalisasi_id' => $data['persetujuan_personalisasi_id'], 'users_id' => $userId],
                 ['kategori' => null]
             );
             $persetujuanId = $p->id;
@@ -245,16 +331,21 @@ class ArsipKelolaAkunController extends Controller
 
     public function destroyKlasifikasi($id)
     {
-        $item = ArsipKlasifikasiTransaksi::findOrFail($id);
+        $item = ArsipKlasifikasiTransaksi::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->firstOrFail();
+
         $item->delete();
         return response()->json(['success' => true]);
     }
 
-    // --- classifyByNominal tetap jika masih diperlukan ---
+    // classifyByNominal tetap
     public function classifyByNominal(Request $request)
     {
         $nominal = (int) $request->query('nominal', 0);
-        $klasList = ArsipKlasifikasiTransaksi::orderBy('nominal', 'asc')->get();
+        $userId = auth()->id();
+
+        $klasList = ArsipKlasifikasiTransaksi::where('users_id', $userId)->orderBy('nominal', 'asc')->get();
 
         if ($klasList->isEmpty()) {
             return response()->json(['success' => false, 'message' => 'Belum ada data klasifikasi'], 404);
@@ -270,7 +361,8 @@ class ArsipKelolaAkunController extends Controller
         $recommended_persetujuan = null;
 
         if (!empty($selected->arsip_otorisasi_mengetahui_id)) {
-            $m = ArsipOtorisasiMengetahui::with('personalisasi')->find($selected->arsip_otorisasi_mengetahui_id);
+            $m = ArsipOtorisasiMengetahui::with('personalisasi')->where('users_id', $userId)
+                ->find($selected->arsip_otorisasi_mengetahui_id);
             if ($m) $recommended_mengetahui = [
                 'id' => $m->id,
                 'personalisasi_id' => $m->arsip_personalisasi_id,
@@ -280,7 +372,8 @@ class ArsipKelolaAkunController extends Controller
         }
 
         if (!empty($selected->arsip_otorisasi_persetujuan_id)) {
-            $p = ArsipOtorisasiPersetujuan::with('personalisasi')->find($selected->arsip_otorisasi_persetujuan_id);
+            $p = ArsipOtorisasiPersetujuan::with('personalisasi')->where('users_id', $userId)
+                ->find($selected->arsip_otorisasi_persetujuan_id);
             if ($p) $recommended_persetujuan = [
                 'id' => $p->id,
                 'personalisasi_id' => $p->arsip_personalisasi_id,
@@ -289,8 +382,7 @@ class ArsipKelolaAkunController extends Controller
             ];
         }
 
-        // options untuk dropdown (sekarang tidak dipakai karena kita gunakan personalisasi)
-        $mengetahui_options = ArsipOtorisasiMengetahui::with('personalisasi')->get()->map(function($m) {
+        $mengetahui_options = ArsipOtorisasiMengetahui::with('personalisasi')->where('users_id', $userId)->get()->map(function($m) {
             return [
                 'otorisasi_id' => $m->id,
                 'personalisasi_id' => $m->arsip_personalisasi_id,
@@ -300,7 +392,7 @@ class ArsipKelolaAkunController extends Controller
             ];
         })->values();
 
-        $persetujuan_options = ArsipOtorisasiPersetujuan::with('personalisasi')->get()->map(function($p) {
+        $persetujuan_options = ArsipOtorisasiPersetujuan::with('personalisasi')->where('users_id', $userId)->get()->map(function($p) {
             return [
                 'otorisasi_id' => $p->id,
                 'personalisasi_id' => $p->arsip_personalisasi_id,

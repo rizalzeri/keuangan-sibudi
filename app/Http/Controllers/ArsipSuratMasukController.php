@@ -7,9 +7,15 @@ use App\Models\ArsipSuratMasuk;
 
 class ArsipSuratMasukController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
-        $surats = ArsipSuratMasuk::orderBy('id', 'asc')->get();
+        $surats = ArsipSuratMasuk::where('users_id', auth()->id())
+            ->orderBy('id', 'asc')->get();
         return view('spj.arsip_surat_masuk.index', compact('surats'));
     }
 
@@ -23,6 +29,8 @@ class ArsipSuratMasukController extends Controller
         ];
 
         $validated = $request->validate($rules);
+
+        $validated['users_id'] = auth()->id();
 
         $surat = ArsipSuratMasuk::create($validated);
 
@@ -48,15 +56,18 @@ class ArsipSuratMasukController extends Controller
 
         $validated = $request->validate($rules);
 
-        $surat = ArsipSuratMasuk::find($id);
+        $surat = ArsipSuratMasuk::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$surat) {
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Surat dengan ID $id tidak ditemukan"
+                    'message' => "Surat dengan ID $id tidak ditemukan atau bukan milik Anda"
                 ], 404);
             }
-            return back()->with('error', "Surat dengan ID $id tidak ditemukan");
+            return back()->with('error', "Surat dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
         $surat->update($validated);
@@ -74,15 +85,18 @@ class ArsipSuratMasukController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $surat = ArsipSuratMasuk::find($id);
+        $surat = ArsipSuratMasuk::where('id', $id)
+            ->where('users_id', auth()->id())
+            ->first();
+
         if (!$surat) {
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Surat dengan ID $id tidak ditemukan"
+                    'message' => "Surat dengan ID $id tidak ditemukan atau bukan milik Anda"
                 ], 404);
             }
-            return back()->with('error', "Surat dengan ID $id tidak ditemukan");
+            return back()->with('error', "Surat dengan ID $id tidak ditemukan atau bukan milik Anda");
         }
 
         $surat->delete();

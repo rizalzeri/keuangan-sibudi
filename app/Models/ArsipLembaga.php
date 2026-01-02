@@ -15,11 +15,18 @@ class ArsipLembaga extends Model
         'nama_dokumen',
         'nomor',
         'status',
-        'link_gdrive'
+        'link_gdrive',
+        'users_id'   // tambahkan di fillable
     ];
 
-    // Laravel otomatis pakai created_at & updated_at
+    protected $primaryKey = 'id';
     public $timestamps = true;
 
-    protected $primaryKey = 'id'; // default, tapi bagus ditambahkan
+    /**
+     * Relasi ke user (owner)
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'users_id');
+    }
 }

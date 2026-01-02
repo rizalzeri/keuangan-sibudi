@@ -9,20 +9,23 @@ class ArsipDokumentasiFoto extends Model
 {
     use HasFactory;
 
-    // nama tabel (sesuaikan jika berbeda)
     protected $table = 'arsip_dokumentasi_foto';
 
-    // bila kolom timestamp bernama created_date / updated_date
     public $timestamps = true;
 
     protected $fillable = [
         'tanggal_foto',
         'kegiatan',
-        'link_gdrive'
+        'link_gdrive',
+        'users_id',
     ];
 
-    // casting
     protected $casts = [
         'tanggal_foto' => 'date'
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'users_id');
+    }
 }
