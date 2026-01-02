@@ -147,6 +147,49 @@
                 <span>Kelola Akun</span>
             </a>
         </li>
+        @auth
+            @php
+                // Ambil nilai yang dibagikan middleware, jika null kita hitung fallback
+                $days = isset($langganan_days_remaining) ? $langganan_days_remaining : null;
+
+                // fallback: jika belum diset, coba hitung langsung jika tgl_langganan ada
+                if (is_null($days) && auth()->user()->tgl_langganan) {
+                    try {
+                        $tgl = \Carbon\Carbon::createFromFormat('Y-m-d', auth()->user()->tgl_langganan)->startOfDay();
+                    } catch (\Exception $e) {
+                        $tgl = \Carbon\Carbon::parse(auth()->user()->tgl_langganan)->startOfDay();
+                    }
+                    $now = \Carbon\Carbon::now();
+                    $days = $tgl->isPast() ? 0 : $now->diffInDays($tgl);
+                }
+            @endphp
+
+            {{-- Optional: tampilkan hanya untuk role bumdes (hapus kondisi berikut jika tidak diperlukan) --}}
+            @if(auth()->user()->role === 'bumdes')
+                <li class="nav-item">
+                    <a class="nav-link {{ Request::is('langganan*') ? '' : 'collapsed' }}" href="/langganan">
+                        <i class="bi bi-calendar3"></i>
+                        <span>Langganan</span>
+
+                        @if(!is_null($days))
+                            {{-- tampilkan badge merah --}}
+                            <span class="badge rounded-pill ms-auto"
+                                style="background-color: #dc3545; color: #fff; font-weight:600; padding: 0.35rem 0.5rem;">
+                                @if($days === 0)
+                                    Berakhir
+                                @elseif($days === 1)
+                                    1 hari
+                                @else
+                                    {{ $days }} hari
+                                @endif
+                            </span>
+                        @endif
+                    </a>
+                </li>
+            @endif
+        @endauth
+
+
 
 
     </ul>
