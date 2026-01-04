@@ -66,11 +66,11 @@ class ArsipPembukuan1Controller extends Controller
             }
 
             // ambil data untuk tahun yang dipilih - hanya milik user
+            // URUTKAN BERDASARKAN created_at DESC agar record terbaru menurut waktu pembuatan muncul dulu
             $collection = $model::where('users_id', $userId)
                 ->whereYear('tanggal_transaksi', $selectedYear)
                 ->where('kategori_pembukuan', '1')
-                ->orderBy('tanggal_transaksi', 'asc')
-                ->orderBy('id', 'asc')
+                ->orderBy('created_at', 'desc')   // <-- gunakan created_at desc
                 ->get();
 
             foreach ($collection as $rec) {
@@ -87,9 +87,19 @@ class ArsipPembukuan1Controller extends Controller
                     'jenis' => $jenis,
                     'bukti' => $buktiDukung,
                     'link_drive' => $rec->link_gdrive ?? null,
+                    // simpan created_at sebagai string 'Y-m-d H:i:s' untuk sorting lintas-tabel
+                    'created_at' => $rec->created_at ? $rec->created_at->format('Y-m-d H:i:s') : null,
                 ];
             }
         }
+
+        // Karena data berasal dari 4 tabel terpisah, pastikan urutan global $rows
+        // berdasarkan created_at descending (terbaru di index 0)
+        usort($rows, function ($a, $b) {
+            $aTs = $a['created_at'] ? strtotime($a['created_at']) : 0;
+            $bTs = $b['created_at'] ? strtotime($b['created_at']) : 0;
+            return $bTs <=> $aTs;
+        });
 
         // Jika tidak ada years hasilnya, sediakan default (tahun sekarang)
         if (empty($years)) {
@@ -152,11 +162,11 @@ class ArsipPembukuan1Controller extends Controller
                 continue;
             }
 
+            // ambil data dan urutkan berdasarkan created_at desc
             $collection = $model::where('users_id', $userId)
                 ->whereYear('tanggal_transaksi', $selectedYear)
                 ->where('kategori_pembukuan', '1')
-                ->orderBy('tanggal_transaksi', 'asc')
-                ->orderBy('id', 'asc')
+                ->orderBy('created_at', 'desc')   // <-- gunakan created_at desc
                 ->get();
 
             foreach ($collection as $rec) {
@@ -172,9 +182,18 @@ class ArsipPembukuan1Controller extends Controller
                     'jenis' => $jenis,
                     'bukti' => $buktiDukung,
                     'tautan' => $rec->link_gdrive,
+                    // simpan created_at untuk urutan global
+                    'created_at' => $rec->created_at ? $rec->created_at->format('Y-m-d H:i:s') : null,
                 ];
             }
         }
+
+        // pastikan rekap juga diurutkan secara global berdasarkan created_at desc
+        usort($rows, function ($a, $b) {
+            $aTs = $a['created_at'] ? strtotime($a['created_at']) : 0;
+            $bTs = $b['created_at'] ? strtotime($b['created_at']) : 0;
+            return $bTs <=> $aTs;
+        });
 
         $data = [
             'rows' => $rows,

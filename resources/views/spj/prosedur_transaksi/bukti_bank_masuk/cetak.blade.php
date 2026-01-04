@@ -159,7 +159,7 @@
 
         <div class="content">
             <div class="line-row">
-                <div class="label">Diterima Uang Dari</div>
+                <div class="label">Dibayarkan Uang Kepada</div>
                 <div class="colon">:</div>
                 <div class="value">{{ $sumber }}</div>
             </div>

@@ -57,7 +57,7 @@
         align-items: center;
     }
     .row-flex .input-wrap {
-        width: 50%;
+        width: 75%;
     }
 </style>
 
