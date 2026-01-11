@@ -58,6 +58,8 @@ use App\Http\Controllers\ArsipDokumentasiFotoController;
 use App\Http\Controllers\ArsipDokumentasiVideoController;
 use App\Http\Controllers\ArsipDokumentasiBerkasDokumenController;
 use App\Http\Controllers\ArsipKelolaAkunController;
+use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\AdminTemplateController;
 use Illuminate\Support\Facades\Http;
 
 /*
@@ -362,6 +364,13 @@ Route::post('/admin/data-user/store', [AdminDataUserController::class, 'store'])
 Route::put('/admin/data-user/{user:id}', [AdminDataUserController::class, 'ubahPassword'])->middleware('auth', 'admin');
 Route::put('/admin/langganan/{user:id}', [AdminDataUserController::class, 'langganan'])->middleware('auth', 'admin');
 Route::delete('/admin/data-user/{user:id}', [AdminDataUserController::class, 'destroy'])->middleware('auth', 'admin');
+
+Route::group(['prefix' => 'admin', 'middleware' => ['auth','admin']], function () {
+    Route::get('/produk_digital', [AdminTemplateController::class, 'index'])->name('admin.produk_digital.index');
+    Route::post('/produk_digital', [AdminTemplateController::class, 'store'])->name('admin.produk_digital.store');
+    Route::put('/produk_digital/{id}', [AdminTemplateController::class, 'update'])->name('admin.produk_digital.update');
+    Route::delete('/produk_digital/{id}', [AdminTemplateController::class, 'destroy'])->name('admin.produk_digital.destroy');
+});
 // menampilkan halaman create
 Route::get('/admin/data-user/create', [AdminDataUserController::class, 'create'])->name('admin.data_user.create');
 
@@ -616,3 +625,7 @@ Route::group(['middleware' => ['auth','role_user:3','langganan']], function () {
 
 
 });
+
+Route::get('/login', [TemplateController::class, 'index'])
+    ->middleware('guest')
+    ->name('login');

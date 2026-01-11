@@ -82,15 +82,7 @@
             input.value = v.replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // Tambahkan titik sebagai pemisah ribuan
         }
 
-        // Hapus format titik sebelum form disubmit
-        $('form').on('submit', function() {
-            // Cari semua input di dalam form ini yang memiliki type="text"
-            $(this).find('input[type="text"]').each(function() {
-                var inputVal = $(this).val();
-                // Hapus titik pemisah ribuan
-                $(this).val(inputVal.replace(/\./g, ''));
-            });
-        });
+
     </script>
 
 
