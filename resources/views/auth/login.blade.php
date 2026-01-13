@@ -76,7 +76,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 2px;
       flex-wrap: wrap;
     }
 
@@ -91,7 +91,7 @@
       max-width: 520px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 3px;
       margin: 12px 0;
     }
 
@@ -367,6 +367,7 @@
     background: #000;
     }
 
+    
 
 
   </style>
@@ -378,7 +379,7 @@
     <div class="kontak shadow-sm mt-3 fixed-top">
       <div class="d-flex justify-content-start">
         <img src="/assets/img/logo.png" alt="" width="40px" height="40px">
-        <span class="email-kontak ms-3">Kontak Kami <br> erihidayat549@gmail.com</span>
+        <span class="email-kontak ms-3">Kontak Kami <br> bumdespro@gmail.com</span>
       </div>
     </div>
 
@@ -402,6 +403,70 @@
 
                 <!-- Buttons group -->
                 <div class="portal-group">
+                  
+                  <div class="text-danger text-start fw-bold fs-6">
+                      Saat ini anda di halaman
+                  </div>
+
+                  <!-- Tombol baru - Aplikasi SPJ Digital dan Dokumen Audit (hijau) -->
+                  <a href="#" class="btn portal-btn green" data-bs-toggle="modal" data-bs-target="#modalSPJDigital">
+                    <span class="label">Aplikasi SPJ Digital dan Dokumen Audit</span>
+                    <span class="arrow">▶</span>
+                  </a>
+                  <div class="portal-caption">
+                    <a href="https://bumdespro.my.id/login" class="small">Menuju halaman login</a>
+                  </div>
+
+                  <!-- Modal SPJ Digital (reuse layout / isi sementara seperti modalPembukuan) -->
+                  <div class="modal fade" id="modalSPJDigital" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                      <div class="modal-content">
+                        <div class="modal-header-green">
+                          <h5>Aplikasi SPJ Digital dan Dokumen Audit</h5>
+                          <div class="modal-close-circle" data-bs-dismiss="modal">✕</div>
+                        </div>
+
+                        <div class="modal-body">
+                          <ol class="modal-list">
+                            <li>
+                              <strong>Fungsi Utama</strong>
+                              <ul>
+                                <li>Input dan pengelolaan SPJ (Surat Pertanggungjawaban)</li>
+                                <li>Upload dokumen audit dan attachment</li>
+                                <li>Riwayat approval / tanda tangan digital (placeholder)</li>
+                                <li>Export laporan ke PDF/Excel</li>
+                              </ul>
+                            </li>
+
+                            <li>
+                              <strong>Fitur dan Kelebihan</strong>
+                              <ul>
+                                <li>Mudah dioperasikan oleh staf lapangan</li>
+                                <li>Tracking status SPJ secara real-time</li>
+                                <li>Integrasi dasar ke sistem pembukuan</li>
+                              </ul>
+                            </li>
+
+                            <li>
+                              <strong>Harga Aplikasi</strong>
+                              <div class="price-bar price-green mt-2">
+                                <span class="old">Rp. 300.000 / bulan</span>
+                                <span class="new">Rp. 10.000 / bulan</span>
+                              </div>
+                            </li>
+                          </ol>
+
+                          <div class="text-center mt-4">
+                            <a href="https://bumdespro.my.id/login" class="btn btn-outline-dark">Menuju Halaman Login</a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="text-danger text-start fw-bold fs-6">
+                      Portal Aplikasi Lain ...
+                  </div>
 
                   <!-- Tombol 1 - Pembukuan (buka modal biru) -->
                   <a href="#" class="btn portal-btn blue" data-bs-toggle="modal" data-bs-target="#modalPembukuan">
@@ -422,10 +487,12 @@
                   </div>
 
                   <!-- Tombol 3 - Template: buka modal templates -->
-                  <a href="#" class="btn portal-btn outline" data-bs-toggle="modal" data-bs-target="#modalTemplates">
+                  <!-- Baru: buka page /templates -->
+                  <a href="{{ url('/templates') }}" class="btn portal-btn outline" target="_blank">
                     <span class="label">Kumpulan Template dan Produk Digital</span>
                     <span class="arrow" style="background:#fff;color:#000;border:1px solid #d1d7de">▶</span>
                   </a>
+
 
                 </div>
               </div>
@@ -436,7 +503,7 @@
               <div class="card mb-3">
                 <div class="card-body">
                   <div class="pt-4 pb-2">
-                    <h5 class="card-title text-center pb-0 fs-4">Silahkan Login Akun Anda</h5>
+                    <h5 class="card-title text-center pb-0 fs-6">Aplikasi SPJ Digital dan Dokumen Audit, Silahkan Login Akun Anda</h5>
                     <p class="text-center small">Masukan Email dan Password Anda</p>
                   </div>
 
@@ -501,6 +568,7 @@
     </div>
   </main>
 
+
   <!-- Modal Pembukuan (blue) -->
   <div class="modal fade" id="modalPembukuan" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -561,7 +629,7 @@
         </div>
         </div>
     </div>
-    </div>
+  </div>
 
 
   <!-- Modal Produk Digital (green) -->

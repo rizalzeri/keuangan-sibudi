@@ -31,7 +31,7 @@
                         <div class="info-box card">
                             <i class="bi bi-envelope"></i>
                             <h3>Email Us</h3>
-                            <p>erihidayat549@gmail.com</p>
+                            <p>bumdespro@gmail.com</p>
                         </div>
                     </div>
                 </div>

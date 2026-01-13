@@ -61,7 +61,7 @@ use App\Http\Controllers\ArsipKelolaAkunController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\AdminTemplateController;
 use Illuminate\Support\Facades\Http;
-
+use App\Http\Controllers\TemplatesController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -629,3 +629,6 @@ Route::group(['middleware' => ['auth','role_user:3','langganan']], function () {
 Route::get('/login', [TemplateController::class, 'index'])
     ->middleware('guest')
     ->name('login');
+
+
+Route::get('/templates', [TemplatesController::class, 'index'])->name('templates.index');

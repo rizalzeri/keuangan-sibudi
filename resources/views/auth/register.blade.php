@@ -94,7 +94,7 @@
             <div class="d-flex justify-content-start">
                 <img src="/assets/img/logo.png" alt="" width="40px" height="40px">
 
-                <span class="email-kontak ms-3">Kontak Kami <br> erihidayat549@gmail.com</span>
+                <span class="email-kontak ms-3">Kontak Kami <br> bumdespro@gmail.com</span>
 
             </div>
         </div>
