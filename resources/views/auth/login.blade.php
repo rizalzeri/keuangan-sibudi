@@ -414,36 +414,46 @@
                     <span class="arrow">▶</span>
                   </a>
                   <div class="portal-caption">
-                    <a href="https://bumdespro.my.id/login" class="small">Menuju halaman login</a>
+                    <a href="https://bumdespro2.my.id/login" class="small">Menuju halaman login</a>
                   </div>
 
-                  <!-- Modal SPJ Digital (reuse layout / isi sementara seperti modalPembukuan) -->
+                  <!-- Modal SPJ Digital (updated: left-aligned) -->
                   <div class="modal fade" id="modalSPJDigital" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-lg modal-dialog-centered">
                       <div class="modal-content">
                         <div class="modal-header-green">
-                          <h5>Aplikasi SPJ Digital dan Dokumen Audit</h5>
+                          <!-- make header text left-aligned -->
+                          <h5 class="text-start">Aplikasi SPJ Digital dan Dokumen Audit</h5>
                           <div class="modal-close-circle" data-bs-dismiss="modal">✕</div>
                         </div>
 
-                        <div class="modal-body">
+                        <!-- add text-start so the whole modal body is left-aligned -->
+                        <div class="modal-body text-start">
                           <ol class="modal-list">
                             <li>
-                              <strong>Fungsi Utama</strong>
+                              <strong>Pembukuan yang dapat digunakan</strong>
                               <ul>
-                                <li>Input dan pengelolaan SPJ (Surat Pertanggungjawaban)</li>
-                                <li>Upload dokumen audit dan attachment</li>
-                                <li>Riwayat approval / tanda tangan digital (placeholder)</li>
-                                <li>Export laporan ke PDF/Excel</li>
+                                <li>Bukti Kas Masuk dan Keluar</li>
+                                <li>Bukti Bank Masuk dan Keluar</li>
+                                <li>Merekap dan Mencetak Dokumen Arsip Keuangan</li>
+                                <li>Rekap dan Kodefikasi Surat Masuk dan Keluar</li>
+                                <li>Arsip Standard Operasional Prosedur (SOP)</li>
+                                <li>Arsip Dokumen Berita Acara</li>
+                                <li>Arsip Dokumen Perjanjian Kerjasama</li>
+                                <li>Arsip Surat Perintah Perjalanan Tugas (SPPT)</li>
+                                <li>Arsip Dokumen Notulen Rapat</li>
+                                <li>Arsip Dokumentasi Berkas</li>
+                                <li>Arsip Dokumentasi Foto dan Video</li>
                               </ul>
                             </li>
 
                             <li>
                               <strong>Fitur dan Kelebihan</strong>
                               <ul>
-                                <li>Mudah dioperasikan oleh staf lapangan</li>
-                                <li>Tracking status SPJ secara real-time</li>
-                                <li>Integrasi dasar ke sistem pembukuan</li>
+                                <li>KodefikasiDokumen Otomatis</li>
+                                <li>Dapat langsung didownload template-template dokumen yang dibutuhkan</li>
+                                <li>Dapat Menyimpan dan Mengakses Otomatis Dokumen yang diarsipkan</li>
+                                <li>Terintegrasi dengan Google Drive</li>
                               </ul>
                             </li>
 
@@ -457,12 +467,13 @@
                           </ol>
 
                           <div class="text-center mt-4">
-                            <a href="https://bumdespro.my.id/login" class="btn btn-outline-dark">Menuju Halaman Login</a>
+                            <a href="https://bumdespro2.my.id/login" class="btn btn-outline-dark">Menuju Halaman Login</a>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
+
 
                   <div class="text-danger text-start fw-bold fs-6">
                       Portal Aplikasi Lain ...
@@ -624,7 +635,7 @@
             </ol>
 
             <div class="text-center mt-4">
-            <a href="https://bumdespro.my.id/login" class="btn btn-outline-dark">Menuju Halaman Login</a>
+              <a href="https://bumdespro.my.id/login" class="btn btn-outline-dark">Menuju Halaman Login</a>
             </div>
         </div>
         </div>
