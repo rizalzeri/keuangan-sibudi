@@ -20,8 +20,6 @@ class ArsipPembukuan2Controller extends Controller
 
     public function index(Request $request)
     {
-        // tahun dipilih (default tahun sekarang)
-        $selectedYear = $request->query('year', date('Y'));
 
         // jenis filter (Semua atau spesifik)
         $types = [
@@ -42,7 +40,13 @@ class ArsipPembukuan2Controller extends Controller
             DB::table('arsip_kas_masuk')->where('users_id', $userId)->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
             DB::table('arsip_kas_keluar')->where('users_id', $userId)->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
         ])->flatten()->unique()->filter()->sortDesc()->values()->all();
+        // kalau kosong, pakai tahun sekarang
+        if (empty($years)) {
+            $years = [date('Y')];
+        }
 
+        // 🔥 INI BAGIAN PENTING
+        $selectedYear = $request->query('year') ?? $years[0];
         // helper mapping untuk tiap model -> jenis & kode singkatan
         $sources = [
             ['model' => ArsipBankMasuk::class, 'jenis' => 'Bukti Bank Masuk', 'abbr' => 'BBM'],

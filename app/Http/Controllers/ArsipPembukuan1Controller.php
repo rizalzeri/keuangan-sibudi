@@ -23,8 +23,6 @@ class ArsipPembukuan1Controller extends Controller
     // Sample dataset (replace with DB later)
     public function index(Request $request)
     {
-        // tahun dipilih (default tahun sekarang)
-        $selectedYear = $request->query('year', date('Y'));
 
         // jenis filter (Semua atau spesifik)
         $types = [
@@ -38,13 +36,21 @@ class ArsipPembukuan1Controller extends Controller
 
         $userId = auth()->id();
 
-        // ambil list tahun yang ada di ke-4 tabel (unik) — hanya milik user saat ini
+        // ambil list tahun dulu
         $years = collect([
             DB::table('arsip_bank_masuk')->where('users_id', $userId)->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
             DB::table('arsip_bank_keluar')->where('users_id', $userId)->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
             DB::table('arsip_kas_masuk')->where('users_id', $userId)->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
             DB::table('arsip_kas_keluar')->where('users_id', $userId)->selectRaw('YEAR(tanggal_transaksi) as y')->pluck('y')->toArray(),
         ])->flatten()->unique()->filter()->sortDesc()->values()->all();
+
+        // kalau kosong, pakai tahun sekarang
+        if (empty($years)) {
+            $years = [date('Y')];
+        }
+
+        // 🔥 INI BAGIAN PENTING
+        $selectedYear = $request->query('year') ?? $years[0];
 
         // helper mapping untuk tiap model -> jenis & kode singkatan
         $sources = [
@@ -92,7 +98,7 @@ class ArsipPembukuan1Controller extends Controller
                 ];
             }
         }
-
+    
         // Karena data berasal dari 4 tabel terpisah, pastikan urutan global $rows
         // berdasarkan created_at descending (terbaru di index 0)
         usort($rows, function ($a, $b) {
