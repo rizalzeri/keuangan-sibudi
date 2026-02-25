@@ -142,9 +142,18 @@ class ProsedurTransaksiController extends Controller
         $this->handleDokumenPendukung($request, $payload);
 
         $tahun = Carbon::parse($validated['tanggal'])->year;
-        $urut = ArsipKasMasuk::whereYear('tanggal_transaksi', $tahun)
+
+        $maxUrut = ArsipKasMasuk::whereYear('tanggal_transaksi', $tahun)
             ->where('kategori_pembukuan', $payload['kategori_pembukuan'])
-            ->count() + 1;
+            ->where('nomor_dokumen', 'like', 'BKM/%')
+            ->get()
+            ->map(function ($r) {
+                $parts = explode('/', $r->nomor_dokumen);
+                return (int) ($parts[1] ?? 0);
+            })
+            ->max();
+
+        $urut = $maxUrut ? $maxUrut + 1 : 1;
 
         $payload['nomor_dokumen'] = $this->generateNomorDokumen('BKM', $validated['tanggal'], $urut);
 
@@ -259,9 +268,20 @@ class ProsedurTransaksiController extends Controller
         $this->handleDokumenPendukung($request, $payload);
 
         $tahun = Carbon::parse($validated['tanggal'])->year;
-        $urut = ArsipKasKeluar::whereYear('tanggal_transaksi', $tahun)
+
+        // Ambil nomor urut tertinggi dari nomor_dokumen yang sudah ada
+        $maxUrut = ArsipKasKeluar::whereYear('tanggal_transaksi', $tahun)
             ->where('kategori_pembukuan', $payload['kategori_pembukuan'])
-            ->count() + 1;
+            ->where('nomor_dokumen', 'like', 'BKK/%')
+            ->get()
+            ->map(function ($r) {
+                // Format: BKK/001/II/2026 → ambil bagian index ke-1 = "001"
+                $parts = explode('/', $r->nomor_dokumen);
+                return (int) ($parts[1] ?? 0);
+            })
+            ->max();
+
+        $urut = $maxUrut ? $maxUrut + 1 : 1;
 
         $payload['nomor_dokumen'] = $this->generateNomorDokumen('BKK', $validated['tanggal'], $urut);
 
@@ -432,9 +452,18 @@ class ProsedurTransaksiController extends Controller
         $this->handleDokumenPendukung($request, $payload);
 
         $tahun = Carbon::parse($validated['tanggal'])->year;
-        $urut = ArsipBankKeluar::whereYear('tanggal_transaksi', $tahun)
+
+        $maxUrut = ArsipBankKeluar::whereYear('tanggal_transaksi', $tahun)
             ->where('kategori_pembukuan', $payload['kategori_pembukuan'])
-            ->count() + 1;
+            ->where('nomor_dokumen', 'like', 'BBK/%')
+            ->get()
+            ->map(function ($r) {
+                $parts = explode('/', $r->nomor_dokumen);
+                return (int) ($parts[1] ?? 0);
+            })
+            ->max();
+
+        $urut = $maxUrut ? $maxUrut + 1 : 1;
 
         $payload['nomor_dokumen'] = $this->generateNomorDokumen('BBK', $validated['tanggal'], $urut);
 
@@ -606,11 +635,20 @@ class ProsedurTransaksiController extends Controller
 
         $this->handleDokumenPendukung($request, $payload);
 
-        $tahun = Carbon::parse($validated['tanggal'])->format('Y');
-        $count = ArsipBankMasuk::whereYear('tanggal_transaksi', $tahun)
-            ->where('kategori_pembukuan', (string)$payload['kategori_pembukuan'])
-            ->count();
-        $urut = $count + 1;
+        $tahun = Carbon::parse($validated['tanggal'])->year;
+
+        $maxUrut = ArsipBankMasuk::whereYear('tanggal_transaksi', $tahun)
+            ->where('kategori_pembukuan', $payload['kategori_pembukuan'])
+            ->where('nomor_dokumen', 'like', 'BBM/%')
+            ->get()
+            ->map(function ($r) {
+                $parts = explode('/', $r->nomor_dokumen);
+                return (int) ($parts[1] ?? 0);
+            })
+            ->max();
+
+        $urut = $maxUrut ? $maxUrut + 1 : 1;
+
         $payload['nomor_dokumen'] = $this->generateNomorDokumen('BBM', $validated['tanggal'], $urut);
 
         $record = ArsipBankMasuk::create($payload);

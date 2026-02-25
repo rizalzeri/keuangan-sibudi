@@ -45,9 +45,9 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width:60px">No</th>
+                            <th style="width:150px">Tanggal Transaksi</th> <!-- pindah di depan -->
                             <th>Transaksi</th>
-                            <th style="width:150px">Nomor Dokumen</th>
-                            <th style="width:150px">Tanggal Transaksi</th> <!-- NEW -->
+                            {{-- kolom Nomor Dokumen dihilangkan --}}
                             <th style="width:200px">Jenis SPJ</th>
                             <th>Bukti Dukung</th>
                             <th style="width:150px">Aksi</th>
@@ -55,11 +55,11 @@
                     </thead>
                     <tbody>
                         @foreach($rows as $i => $r)
-                            <tr data-jenis="{{ $r['jenis'] }}" data-link="{{ e($r['link_drive'] ?? '') }}">
+                            {{-- Simpan nomor dokumen di attribute tr agar tetap bisa dipakai tanpa menampilkan kolom --}}
+                            <tr data-jenis="{{ $r['jenis'] }}" data-link="{{ e($r['link_drive'] ?? '') }}" data-nomor="{{ $r['nomor'] ?? '' }}">
                                 <td class="text-center">{{ $i + 1 }}</td>
+                                <td>{{ $r['tanggal_display'] }}</td> <!-- tanggal sekarang muncul dulu -->
                                 <td>{{ $r['transaksi'] }}</td>
-                                <td>{{ $r['nomor'] }}</td>
-                                <td>{{ $r['tanggal_display'] }}</td> <!-- NEW -->
                                 <td>{{ $r['jenis'] }}</td>
                                 <td>{{ $r['bukti'] }}</td>
                                 <td class="text-center">
@@ -93,7 +93,7 @@
               <tbody>
                   <tr><th>Transaksi</th><td id="viewTransaksi"></td></tr>
                   <tr><th>Nomor Dokumen</th><td id="viewNomor"></td></tr>
-                  <tr><th>Tanggal Transaksi</th><td id="viewTanggal"></td></tr> <!-- NEW -->
+                  <tr><th>Tanggal Transaksi</th><td id="viewTanggal"></td></tr>
                   <tr><th>Jenis SPJ</th><td id="viewJenis"></td></tr>
                   <tr><th>Bukti Dukung</th><td id="viewBukti"></td></tr>
                   <tr><th>Link Google Drive</th><td id="viewLinkDrive"></td></tr>
@@ -122,28 +122,30 @@ document.addEventListener('DOMContentLoaded', function () {
         url.searchParams.set('type', qType);
         window.location.href = url.toString();
     });
+
     const printRoutes = {
-            'Bukti Bank Masuk': "{{ url('/spj/bukti_bank_masuk/print') }}",
-            'Bukti Bank Keluar': "{{ url('/spj/bukti_bank_keluar/print') }}",
-            'Bukti Kas Masuk': "{{ url('/spj/bukti_kas_masuk/print') }}",
-            'Bukti Kas Keluar': "{{ url('/spj/bukti_kas_keluar/print') }}"
-        };
-    // action buttons (lihat)
+        'Bukti Bank Masuk': "{{ url('/spj/bukti_bank_masuk/print') }}",
+        'Bukti Bank Keluar': "{{ url('/spj/bukti_bank_keluar/print') }}",
+        'Bukti Kas Masuk': "{{ url('/spj/bukti_kas_masuk/print') }}",
+        'Bukti Kas Keluar': "{{ url('/spj/bukti_kas_keluar/print') }}"
+    };
+
+    // action buttons (lihat) — indeks td disesuaikan dengan urutan baru:
+    // td 0 = No, td 1 = Tanggal, td 2 = Transaksi, td 3 = Jenis, td 4 = Bukti, td 5 = Aksi
     $('#arsipTable tbody').on('click', '.btn-view', function () {
         const $tr = $(this).closest('tr');
         const id = $(this).data('id') || $tr.data('id') || '';
-        // prefer data-jenis attribute dari <tr>, fallback ambil dari kolom
-        const jenis = ($tr.data('jenis') || $tr.find('td').eq(4).text()).trim();
-        const transaksi = $tr.find('td').eq(1).text().trim();
-        const nomor = $tr.find('td').eq(2).text().trim();
-        const tanggal = $tr.find('td').eq(3).text().trim();
-        const bukti = $tr.find('td').eq(5).text().trim();
+        const jenis = ($tr.data('jenis') || $tr.find('td').eq(3).text()).trim();
+        const transaksi = $tr.find('td').eq(2).text().trim();
+        const nomor = $tr.data('nomor') || ''; // ambil dari attribute karena kolom di tabel dihapus
+        const tanggal = $tr.find('td').eq(1).text().trim();
+        const bukti = $tr.find('td').eq(4).text().trim();
         const link = $(this).data('link') || $tr.data('link') || '';
 
         const base = printRoutes[jenis];
 
         if (!base) {
-            // tidak dikenali -> beri notifikasi
+            // jika tipe tidak dikenali untuk cetak, beri notifikasi
             Swal.fire('Info', 'Tipe dokumen tidak dikenali untuk cetak: ' + jenis, 'info');
             return;
         }
@@ -172,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#arsipTable tbody').on('click', '.btn-edit', function () {
         const $tr = $(this).closest('tr');
         const id = $(this).data('id');
-        const jenis = ($tr.data('jenis') || $tr.find('td').eq(4).text()).trim();
+        const jenis = ($tr.data('jenis') || $tr.find('td').eq(3).text()).trim();
 
         const editRoutes = {
             'Bukti Bank Masuk': "{{ url('/spj/bukti_bank_masuk') }}",
@@ -192,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // gunakan path halaman sekarang sebagai return target (mis: /spj/arsip_pembukuan_1)
+        // gunakan path halaman sekarang sebagai return target (mis: /spj/arsip_pembukuan_2)
         const returnPath = window.location.pathname || '/spj/arsip_pembukuan_2';
         const url = base + '?id=' + encodeURIComponent(id) + '&mode=edit&return=' + encodeURIComponent(returnPath);
 
@@ -204,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#arsipTable tbody').on('click', '.btn-delete', function () {
         const $tr = $(this).closest('tr');
         const id = $(this).data('id');
-        const jenis = $tr.find('td').eq(4).text().trim(); // updated index
+        const jenis = $tr.find('td').eq(3).text().trim(); // jenis sekarang di td index 3
 
         Swal.fire({
             title: 'Hapus Data?',

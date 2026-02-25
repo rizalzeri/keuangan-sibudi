@@ -37,9 +37,7 @@
         $dokSel = [];
     }
 
-    // initial values for JS
-    $initialMenyetujui = $isEdit ? ($record->menyetujui ?? '') : '';
-    $initialMengetahui = $isEdit ? ($record->mengetahui ?? '') : '';
+    // initial values for JS (nominal only)
     $initialNominal = $isEdit ? ($record->nominal ?? '') : old('nominal', '');
 @endphp
 
@@ -76,6 +74,7 @@
                 @method('PUT')
             @endif
             <input type="hidden" name="return" value="{{ request()->query('return', '/spj/arsip_pembukuan_1') }}">
+
             <div class="row-flex">
                 <label for="tanggal">Tanggal</label>
                 <div class="input-wrap">
@@ -119,41 +118,7 @@
                 </div>
             </div>
 
-            <!-- MENYETUJUI -> select -->
-            <div class="row-flex">
-                <label for="menyetujui_select">Menyetujui</label>
-                <div class="input-wrap">
-                    <select id="menyetujui_select" name="menyetujui_select" class="form-control">
-                        <option value="">-- Pilih Menyetujui --</option>
-                        {{-- Jika edit & ada nama tersimpan, tampilkan sebagai pilihan pertama (selected) --}}
-                        @if($initialMenyetujui)
-                            <option value="{{ $initialMenyetujui }}" selected>{{ $initialMenyetujui }}</option>
-                        @endif
-                        {{-- contoh opsi tambahan (opsional) --}}
-                        <option value="Nama A" {{ old('menyetujui', $initialMenyetujui) == 'Nama A' ? 'selected' : '' }}>Nama A</option>
-                        <option value="Nama B" {{ old('menyetujui', $initialMenyetujui) == 'Nama B' ? 'selected' : '' }}>Nama B</option>
-                    </select>
-                    <input type="hidden" id="menyetujui" name="menyetujui" value="{{ old('menyetujui', $initialMenyetujui) }}">
-                    <input type="hidden" id="menyetujui_id" name="menyetujui_id" value="{{ old('menyetujui_id', $isEdit ? ($record->menyetujui_id ?? '') : '') }}">
-                </div>
-            </div>
-
-            <!-- MENGETAHUI -> select -->
-            <div class="row-flex">
-                <label for="mengetahui_select">Mengetahui</label>
-                <div class="input-wrap">
-                    <select id="mengetahui_select" name="mengetahui_select" class="form-control">
-                        <option value="">-- Pilih Mengetahui --</option>
-                        @if($initialMengetahui)
-                            <option value="{{ $initialMengetahui }}" selected>{{ $initialMengetahui }}</option>
-                        @endif
-                        <option value="Nama X" {{ old('mengetahui', $initialMengetahui) == 'Nama X' ? 'selected' : '' }}>Nama X</option>
-                        <option value="Nama Y" {{ old('mengetahui', $initialMengetahui) == 'Nama Y' ? 'selected' : '' }}>Nama Y</option>
-                    </select>
-                    <input type="hidden" id="mengetahui" name="mengetahui" value="{{ old('mengetahui', $initialMengetahui) }}">
-                    <input type="hidden" id="mengetahui_id" name="mengetahui_id" value="{{ old('mengetahui_id', $isEdit ? ($record->mengetahui_id ?? '') : '') }}">
-                </div>
-            </div>
+            {{-- MENYETUJUI dan MENGETAHUI dihapus sesuai permintaan --}}
 
             <div class="row-flex">
                 <label>Kategori Pembukuan</label>
@@ -248,22 +213,12 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    // transfer some PHP values to JS
-    const initialMenyetujui = {!! json_encode($initialMenyetujui) !!};
-    const initialMengetahui = {!! json_encode($initialMengetahui) !!};
+    // initial value for JS (nominal only)
     const initialNominal = {!! json_encode($initialNominal ?: '') !!};
 
     document.addEventListener('DOMContentLoaded', function () {
         const display = document.getElementById('nominal_display');
         const hidden  = document.getElementById('nominal');
-
-        const mengetahuiSelect = document.getElementById('mengetahui_select');
-        const menyetujuiSelect = document.getElementById('menyetujui_select');
-
-        const mengetahuiHidden = document.getElementById('mengetahui');
-        const mengetahuiIdHidden = document.getElementById('mengetahui_id');
-        const menyetujuiHidden = document.getElementById('menyetujui');
-        const menyetujuiIdHidden = document.getElementById('menyetujui_id');
 
         /* -----------------------
            FORMAT NOMINAL RUPIAH
@@ -291,8 +246,7 @@
             const digits = String(rawValue).replace(/\D/g, '').replace(/^0+/, '') || '';
             hidden.value = digits;
             display.value = digits === '' ? '' : 'Rp.' + formatRupiahDigits(digits);
-            // after nominal update, panggil API
-            loadOtorisasiOptions(parseInt(digits || 0, 10));
+            // removed otorisasi API call (menyetujui/mengetahui removed)
         }
 
         display.addEventListener('input', function () {
@@ -316,169 +270,6 @@
                              (e.keyCode >= 96 && e.keyCode <= 105);
             if (!isNumber) e.preventDefault();
         });
-
-        /* ---------------------------
-           Helpers: clear select (keep placeholder)
-        ----------------------------*/
-        function clearSelectKeepPlaceholder(sel) {
-            if (!sel) return;
-            while (sel.options.length > 1) sel.remove(1); // keep the first placeholder
-        }
-
-        function setSelectSingleOption(sel, value, text, personalisasi_id = '') {
-            if (!sel) return;
-            clearSelectKeepPlaceholder(sel);
-            const opt = document.createElement('option');
-            opt.value = value || '';
-            opt.text = text || '';
-            if (personalisasi_id) opt.setAttribute('data-personalisasi-id', personalisasi_id);
-            sel.add(opt);
-            // select it
-            sel.value = value || '';
-        }
-
-        /* -----------------------------------
-           Fetch opsi otorisasi berdasarkan nominal
-           - jika ada rekomendasi dari API -> pakai itu
-           - jika tidak ada rekomendasi -> gunakan initialX (jika ada)
-        --------------------------------------*/
-        async function loadOtorisasiOptions(nominalValue) {
-            try {
-                // default: clear & disable
-                clearSelectKeepPlaceholder(mengetahuiSelect);
-                clearSelectKeepPlaceholder(menyetujuiSelect);
-                mengetahuiSelect.disabled = true;
-                menyetujuiSelect.disabled = true;
-                mengetahuiHidden.value = '';
-                mengetahuiIdHidden.value = '';
-                menyetujuiHidden.value = '';
-                menyetujuiIdHidden.value = '';
-
-                if (!nominalValue || nominalValue <= 0) {
-                    // no nominal -> keep placeholder and disable
-                    // but if editing and initial names exist, show them
-                    if (initialMenyetujui) {
-                        setSelectSingleOption(menyetujuiSelect, initialMenyetujui, initialMenyetujui);
-                        menyetujuiSelect.disabled = false;
-                        menyetujuiHidden.value = initialMenyetujui;
-                    }
-                    if (initialMengetahui) {
-                        setSelectSingleOption(mengetahuiSelect, initialMengetahui, initialMengetahui);
-                        mengetahuiSelect.disabled = false;
-                        mengetahuiHidden.value = initialMengetahui;
-                    }
-                    return;
-                }
-
-                const url = "{{ route('spj.klasifikasi.classify') }}?nominal=" + encodeURIComponent(nominalValue || 0);
-                const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" }});
-                if (!res.ok) {
-                    // fallback: show initial if exists
-                    if (initialMenyetujui) {
-                        setSelectSingleOption(menyetujuiSelect, initialMenyetujui, initialMenyetujui);
-                        menyetujuiSelect.disabled = false;
-                        menyetujuiHidden.value = initialMenyetujui;
-                    }
-                    if (initialMengetahui) {
-                        setSelectSingleOption(mengetahuiSelect, initialMengetahui, initialMengetahui);
-                        mengetahuiSelect.disabled = false;
-                        mengetahuiHidden.value = initialMengetahui;
-                    }
-                    return;
-                }
-                const body = await res.json();
-                if (!body.success) {
-                    if (initialMenyetujui) {
-                        setSelectSingleOption(menyetujuiSelect, initialMenyetujui, initialMenyetujui);
-                        menyetujuiSelect.disabled = false;
-                        menyetujuiHidden.value = initialMenyetujui;
-                    }
-                    if (initialMengetahui) {
-                        setSelectSingleOption(mengetahuiSelect, initialMengetahui, initialMengetahui);
-                        mengetahuiSelect.disabled = false;
-                        mengetahuiHidden.value = initialMengetahui;
-                    }
-                    return;
-                }
-
-                const data = body.data || {};
-                const recommended = data.recommended || {};
-
-                // MENGETAHUI
-                if (recommended.mengetahui && recommended.mengetahui.nama) {
-                    setSelectSingleOption(mengetahuiSelect, recommended.mengetahui.id || recommended.mengetahui.nama, recommended.mengetahui.nama, recommended.mengetahui.personalisasi_id || '');
-                    mengetahuiSelect.disabled = false;
-                    mengetahuiHidden.value = recommended.mengetahui.nama || '';
-                    mengetahuiIdHidden.value = '';
-                } else if (initialMengetahui) {
-                    // gunakan nilai yang ada di record jika API tidak rekomendasikan siapa pun
-                    setSelectSingleOption(mengetahuiSelect, initialMengetahui, initialMengetahui);
-                    mengetahuiSelect.disabled = false;
-                    mengetahuiHidden.value = initialMengetahui;
-                }
-
-                // MENYETUJUI
-                if (recommended.persetujuan && recommended.persetujuan.nama) {
-                    setSelectSingleOption(menyetujuiSelect, recommended.persetujuan.id || recommended.persetujuan.nama, recommended.persetujuan.nama, recommended.persetujuan.personalisasi_id || '');
-                    menyetujuiSelect.disabled = false;
-                    menyetujuiHidden.value = recommended.persetujuan.nama || '';
-                    menyetujuiIdHidden.value = '';
-                } else if (initialMenyetujui) {
-                    setSelectSingleOption(menyetujuiSelect, initialMenyetujui, initialMenyetujui);
-                    menyetujuiSelect.disabled = false;
-                    menyetujuiHidden.value = initialMenyetujui;
-                }
-
-            } catch (err) {
-                console.error('Error loadOtorisasiOptions', err);
-                // fallback to initial if available
-                if (initialMenyetujui) {
-                    setSelectSingleOption(menyetujuiSelect, initialMenyetujui, initialMenyetujui);
-                    menyetujuiSelect.disabled = false;
-                    menyetujuiHidden.value = initialMenyetujui;
-                }
-                if (initialMengetahui) {
-                    setSelectSingleOption(mengetahuiSelect, initialMengetahui, initialMengetahui);
-                    mengetahuiSelect.disabled = false;
-                    mengetahuiHidden.value = initialMengetahui;
-                }
-            }
-        }
-
-        // Sync hidden fields when user changes selection
-        mengetahuiSelect.addEventListener('change', function () {
-            const selOpt = this.options[this.selectedIndex];
-            const nama = selOpt ? selOpt.text : '';
-            mengetahuiHidden.value = nama || '';
-            mengetahuiIdHidden.value = '';
-        });
-
-        menyetujuiSelect.addEventListener('change', function () {
-            const selOpt = this.options[this.selectedIndex];
-            const nama = selOpt ? selOpt.text : '';
-            menyetujuiHidden.value = nama || '';
-            menyetujuiIdHidden.value = '';
-        });
-
-        // on load: if there's an initialNominal, call loader to populate selects (and allow override by API)
-        const initNom = (hidden.value && hidden.value !== '') ? parseInt(hidden.value, 10) : (initialNominal ? parseInt(initialNominal, 10) : 0);
-        if (initNom && !isNaN(initNom)) {
-            // ensure display consistent
-            setDisplayFromHidden();
-            loadOtorisasiOptions(initNom);
-        } else {
-            // still allow showing initial names if present even without nominal
-            if (initialMenyetujui) {
-                setSelectSingleOption(menyetujuiSelect, initialMenyetujui, initialMenyetujui);
-                menyetujuiSelect.disabled = false;
-                menyetujuiHidden.value = initialMenyetujui;
-            }
-            if (initialMengetahui) {
-                setSelectSingleOption(mengetahuiSelect, initialMengetahui, initialMengetahui);
-                mengetahuiSelect.disabled = false;
-                mengetahuiHidden.value = initialMengetahui;
-            }
-        }
 
         /* -----------------------------------
            HANDLE SUBMIT: PRINT + SIMPAN DATA

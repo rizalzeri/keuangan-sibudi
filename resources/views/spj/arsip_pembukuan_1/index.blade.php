@@ -45,9 +45,8 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width:60px">No</th>
+                            <th style="width:150px">Tanggal Transaksi</th> <!-- dipindah jadi kolom pertama setelah No -->
                             <th>Transaksi</th>
-                            <th style="width:150px">Nomor Dokumen</th>
-                            <th style="width:150px">Tanggal Transaksi</th> <!-- NEW -->
                             <th style="width:200px">Jenis SPJ</th>
                             <th>Bukti Dukung</th>
                             <th style="width:150px">Aksi</th>
@@ -55,11 +54,12 @@
                     </thead>
                     <tbody>
                         @foreach($rows as $i => $r)
-                            <tr data-jenis="{{ $r['jenis'] }}" data-link="{{ e($r['link_drive'] ?? '') }}">
+                            {{-- simpan nomor dokumen di attribute tr agar tetap bisa dipakai di modal / fallback tanpa menampilkan kolom --}}
+                            <tr data-jenis="{{ $r['jenis'] }}" data-link="{{ e($r['link_drive'] ?? '') }}" data-nomor="{{ $r['nomor'] ?? '' }}">
                                 <td class="text-center">{{ $i + 1 }}</td>
+                                <td>{{ $r['tanggal_display'] }}</td> <!-- tanggal sekarang muncul dulu -->
                                 <td>{{ $r['transaksi'] }}</td>
-                                <td>{{ $r['nomor'] }}</td>
-                                <td>{{ $r['tanggal_display'] }}</td> <!-- NEW: tampilkan tanggal -->
+                                {{-- nomor dokumen dihilangkan dari tabel sesuai permintaan --}}
                                 <td>{{ $r['jenis'] }}</td>
                                 <td>{{ $r['bukti'] }}</td>
                                 <td class="text-center">
@@ -93,7 +93,7 @@
               <tbody>
                   <tr><th>Transaksi</th><td id="viewTransaksi"></td></tr>
                   <tr><th>Nomor Dokumen</th><td id="viewNomor"></td></tr>
-                  <tr><th>Tanggal Transaksi</th><td id="viewTanggal"></td></tr> <!-- NEW -->
+                  <tr><th>Tanggal Transaksi</th><td id="viewTanggal"></td></tr>
                   <tr><th>Jenis SPJ</th><td id="viewJenis"></td></tr>
                   <tr><th>Bukti Dukung</th><td id="viewBukti"></td></tr>
                   <tr><th>Link Google Drive</th><td id="viewLinkDrive"></td></tr>
@@ -136,77 +136,44 @@
         $('#arsipTable tbody').on('click', '.btn-view', function () {
             const $tr = $(this).closest('tr');
             const id = $(this).data('id') || $tr.data('id') || '';
-            // prefer data-jenis attribute dari <tr>, fallback ambil dari kolom
-            const jenis = ($tr.data('jenis') || $tr.find('td').eq(4).text()).trim();
-            const transaksi = $tr.find('td').eq(1).text().trim();
-            const nomor = $tr.find('td').eq(2).text().trim();
-            const tanggal = $tr.find('td').eq(3).text().trim();
-            const bukti = $tr.find('td').eq(5).text().trim();
+            // prefer data-jenis attribute dari <tr>, fallback ambil dari kolom (indeks baru)
+            const jenis = ($tr.data('jenis') || $tr.find('td').eq(3).text()).trim();
+            const transaksi = $tr.find('td').eq(2).text().trim();
+            const nomor = $tr.data('nomor') || ''; // diambil dari data-attribute karena kolom di tabel sudah dihapus
+            const tanggal = $tr.find('td').eq(1).text().trim();
+            const bukti = $tr.find('td').eq(4).text().trim();
             const link = $(this).data('link') || $tr.data('link') || '';
+
+            // isi modal
+            $('#viewTransaksi').text(transaksi);
+            $('#viewNomor').text(nomor);
+            $('#viewTanggal').text(tanggal);
+            $('#viewJenis').text(jenis);
+            $('#viewBukti').text(bukti);
+            if (link) {
+                $('#viewLinkDrive').html('<a href="' + link + '" target="_blank" rel="noopener">Buka di Drive</a>');
+            } else {
+                $('#viewLinkDrive').text('');
+            }
+
+            // tampilkan modal
+            const modal = new bootstrap.Modal(document.getElementById('modalView'));
+            modal.show();
 
             const base = printRoutes[jenis];
 
             if (!base) {
-                // tidak dikenali -> beri notifikasi
-                Swal.fire('Info', 'Tipe dokumen tidak dikenali untuk cetak: ' + jenis, 'info');
-                return;
+                // tidak dikenali -> beri notifikasi (tetap tampilkan modal)
+                // (opsional) tidak usah return karena kita hanya memberi info bahwa print tidak tersedia
+                // Swal.fire('Info', 'Tipe dokumen tidak dikenali untuk cetak: ' + jenis, 'info');
             }
-
-            // jika ada id, cukup kirim id supaya controller menarik data lengkap dari DB
-            let url;
-            if (id) {
-                url = base + '?id=' + encodeURIComponent(id);
-            } else {
-                // fallback: kirim beberapa field lewat query string (controller view akan menerima $data fallback)
-                const params = new URLSearchParams({
-                    transaksi: transaksi || '',
-                    nomor: nomor || '',
-                    tanggal: tanggal || '',
-                    bukti: bukti || '',
-                    link_gdrive: link || ''
-                });
-                url = base + '?' + params.toString();
-            }
-
-            // buka halaman cetak di tab baru
-            window.open(url, '_blank');
         });
 
         // EDIT button -> redirect to appropriate form with id query param + return path
         $('#arsipTable tbody').on('click', '.btn-edit', function () {
             const $tr = $(this).closest('tr');
             const id = $(this).data('id');
-            const jenis = ($tr.data('jenis') || $tr.find('td').eq(4).text()).trim();
-
-            const editRoutes = {
-                'Bukti Bank Masuk': "{{ url('/spj/bukti_bank_masuk') }}",
-                'Bukti Bank Keluar': "{{ url('/spj/bukti_bank_keluar') }}",
-                'Bukti Kas Masuk': "{{ url('/spj/bukti_kas_masuk') }}",
-                'Bukti Kas Keluar': "{{ url('/spj/bukti_kas_keluar') }}"
-            };
-
-            const base = editRoutes[jenis];
-
-            if (!base) {
-                Swal.fire('Info', 'Tipe dokumen tidak dikenali untuk edit: ' + jenis, 'info');
-                return;
-            }
-            if (!id) {
-                Swal.fire('Info', 'ID tidak tersedia untuk record ini, tidak dapat melakukan edit.', 'warning');
-                return;
-            }
-
-            // gunakan path halaman sekarang sebagai return target (mis: /spj/arsip_pembukuan_1)
-            const returnPath = window.location.pathname || '/spj/arsip_pembukuan_1';
-            const url = base + '?id=' + encodeURIComponent(id) + '&mode=edit&return=' + encodeURIComponent(returnPath);
-
-            // navigasi
-            window.location.href = url;
-        });// EDIT button -> redirect to appropriate form with id query param + return path
-        $('#arsipTable tbody').on('click', '.btn-edit', function () {
-            const $tr = $(this).closest('tr');
-            const id = $(this).data('id');
-            const jenis = ($tr.data('jenis') || $tr.find('td').eq(4).text()).trim();
+            const jenis = ($tr.data('jenis') || $tr.find('td').eq(3).text()).trim();
 
             const editRoutes = {
                 'Bukti Bank Masuk': "{{ url('/spj/bukti_bank_masuk') }}",
@@ -234,12 +201,10 @@
             window.location.href = url;
         });
 
-
-
         $('#arsipTable tbody').on('click', '.btn-delete', function () {
             const $tr = $(this).closest('tr');
             const id = $(this).data('id');
-            const jenis = $tr.find('td').eq(4).text().trim(); // updated index
+            const jenis = $tr.find('td').eq(3).text().trim(); // updated index (jenis sekarang di td index 3)
 
             Swal.fire({
                 title: 'Hapus Data?',

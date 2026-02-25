@@ -200,10 +200,10 @@
 
             {{-- MENGETAHUI (kiri) --}}
             <div class="sign-box">
-                <div class="sign-title">Mengetahui</div>
+                <div class="sign-title">Menyetujui/Mengetahui</div>
 
                 {{-- Nama yang mengetahui — tampil di atas garis jika ada, jika tidak biarkan kosong (ruang tetap ada) --}}
-                <div class="sign-name">{{ $mengetahui ?? '' }}</div>
+                <div class="sign-name"></div>
 
                 <div class="sign-line"></div>
 
