@@ -16,13 +16,17 @@ class TemplateController extends Controller
         // Jika terdapat parameter ?token=..., proses login otomatis praktikum
         if ($request->filled('token')) {
             $token = trim($request->query('token'));
-            $user = $sandboxService->authenticateByToken($token);
+            try {
+                $user = $sandboxService->authenticateByToken($token);
 
-            if ($user) {
-                return redirect('/spj')->with('success', 'Selamat datang di Sesi Praktikum PortalBUMDes Academy! Sesi Anda aktif selama 1 jam.');
+                if ($user) {
+                    return redirect('/spj')->with('success', 'Selamat datang di Sesi Praktikum PortalBUMDes Academy! Sesi Anda aktif selama 1 jam.');
+                }
+
+                return redirect('/login')->with('error', 'Token praktikum PortalBUMDes tidak valid atau tidak ditemukan di database portal.');
+            } catch (\Throwable $e) {
+                return redirect('/login')->with('error', 'Error praktikum: ' . $e->getMessage());
             }
-
-            return redirect('/login')->with('error', 'Token praktikum PortalBUMDes tidak valid atau telah kedaluwarsa.');
         }
 
         // ambil semua kategori beserta sub kategori (eager load)

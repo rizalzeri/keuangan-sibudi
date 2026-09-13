@@ -77,16 +77,13 @@ class DemoSandboxService
      */
     public function authenticateByToken(string $token): ?User
     {
-        // 1. Check token in portal database
-        $portalUser = null;
-        try {
-            $portalUser = DB::connection('portal')
-                ->table('users')
-                ->where('bumdespro2_token', $token)
-                ->first();
-        } catch (\Throwable $e) {
-            Log::error('Gagal terkoneksi ke database portal_bumbdes: ' . $e->getMessage());
+        // 0. Pastikan migrasi kolom is_demo telah dijalankan di database server
+        if (!Schema::hasColumn('users', 'is_demo')) {
+            throw new \Exception("Kolom 'is_demo' belum ada di tabel users server. Harap jalankan migrasi di terminal server: php artisan migrate --path=database/migrations/2026_09_14_000002_add_demo_fields_to_users_table.php");
         }
+
+        // 1. Cari user di database portal (dengan auto-discovery cPanel)
+        $portalUser = $this->findPortalUser($token);
 
         if (!$portalUser) {
             return null;
@@ -235,5 +232,47 @@ class DemoSandboxService
         }
 
         return $count;
+    }
+
+    /**
+     * Mencari user dari database portal, mendukung koneksi sekunder dan auto-discovery prefix cPanel.
+     */
+    public function findPortalUser(string $token)
+    {
+        // 1. Coba koneksi sekunder 'portal' yang didefinisikan di config/database.php
+        try {
+            $portalUser = DB::connection('portal')
+                ->table('users')
+                ->where('bumdespro2_token', $token)
+                ->first();
+
+            if ($portalUser) {
+                return $portalUser;
+            }
+        } catch (\Throwable $e) {
+            Log::info('Koneksi portal eksplisit gagal, mencoba auto-discovery database: ' . $e->getMessage());
+        }
+
+        // 2. Auto-discovery schema di server MySQL yang sama (misal u110981049_portal_...)
+        try {
+            $databases = DB::select("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME LIKE '%portal%'");
+            foreach ($databases as $db) {
+                $schemaName = $db->SCHEMA_NAME;
+                try {
+                    $portalUser = DB::table("{$schemaName}.users")
+                        ->where('bumdespro2_token', $token)
+                        ->first();
+                    if ($portalUser) {
+                        return $portalUser;
+                    }
+                } catch (\Throwable $e2) {
+                    continue;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Gagal auto-discovery schema portal: ' . $e->getMessage());
+        }
+
+        return null;
     }
 }
