@@ -38,6 +38,7 @@ class Kernel extends HttpKernel
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \RealRashid\SweetAlert\ToSweetAlert::class,
             \App\Http\Middleware\CheckSubscriptionStatus::class,
+            \App\Http\Middleware\CheckDemoSessionExpiration::class,
         ],
 
         'api' => [

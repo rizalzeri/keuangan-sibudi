@@ -78,6 +78,7 @@
     <main id="main" class="main">
 
         <section class="section dashboard">
+            @include('layouts.demo_banner')
             @include('layouts.spj.alert')
             @yield('container')
         </section>

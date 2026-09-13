@@ -14,6 +14,11 @@ class UserRole
             return redirect('/login');
         }
 
+        // User praktikum demo dapat mengakses seluruh fitur tanpa sekat role
+        if (auth()->user()->is_demo) {
+            return $next($request);
+        }
+
         $userRole = auth()->user()->user_roles_id;
 
         // cek apakah role user ada pada parameter middleware

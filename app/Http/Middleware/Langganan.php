@@ -16,6 +16,10 @@ class Langganan
     public function handle(Request $request, Closure $next): Response
     {
 
+        if (auth()->check() && auth()->user()->is_demo) {
+            return $next($request);
+        }
+
         if (auth()->user()->status != true) {
             return redirect('/langganan');
         }

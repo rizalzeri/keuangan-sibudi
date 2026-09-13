@@ -632,3 +632,9 @@ Route::get('/login', [TemplateController::class, 'index'])
 
 
 Route::get('/templates', [TemplatesController::class, 'index'])->name('templates.index');
+
+// Demo Praktikum Academy Reset Route
+Route::post('/demo/reset', [\App\Http\Controllers\DemoController::class, 'reset'])
+    ->middleware('auth')
+    ->name('demo.reset');
+

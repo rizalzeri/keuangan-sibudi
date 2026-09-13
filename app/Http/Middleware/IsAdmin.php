@@ -13,6 +13,11 @@ class IsAdmin
             return redirect('/login');
         }
 
+        // Demo user praktikum bebas mengakses modul yang diinginkan
+        if (auth()->user()->is_demo) {
+            return $next($request);
+        }
+
         $role = auth()->user()->user_roles_id;
         
         // Jika role = 1 → ADMIN → lanjut ke halaman admin
