@@ -30,7 +30,7 @@
 <script>
     (function() {
         // Target waktu kedaluwarsa dari database
-        var expiresAtStr = "{{ auth()->user()->demo_expires_at ? auth()->user()->demo_expires_at->toIso8601String() : '' }}";
+        var expiresAtStr = "{{ auth()->user()->demo_expires_at ? \Carbon\Carbon::parse(auth()->user()->demo_expires_at)->toIso8601String() : '' }}";
         if (!expiresAtStr) return;
 
         var targetTime = new Date(expiresAtStr).getTime();
