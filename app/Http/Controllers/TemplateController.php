@@ -16,8 +16,18 @@ class TemplateController extends Controller
         // Jika terdapat parameter ?token=..., proses login otomatis praktikum
         if ($request->filled('token')) {
             $token = trim($request->query('token'));
+            $deviceId = trim((string) $request->query('device_id', ''));
+
+            // Langkah 1: belum ada device_id -> ambil/buat dari localStorage browser lalu redirect balik
+            if (!preg_match('/^[A-Za-z0-9\-]{16,64}$/', $deviceId)) {
+                return response()
+                    ->view('auth.demo_device', ['token' => $token])
+                    ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+            }
+
+            // Langkah 2: login praktikum terisolasi per perangkat
             try {
-                $user = $sandboxService->authenticateByToken($token);
+                $user = $sandboxService->authenticateByToken($token, $deviceId);
 
                 if ($user) {
                     return redirect('/spj')->with('success', 'Selamat datang di Sesi Praktikum PortalBUMDes Academy! Sesi Anda aktif selama 1 jam.');

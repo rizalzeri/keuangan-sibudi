@@ -74,12 +74,20 @@ class DemoSandboxService
 
     /**
      * Authenticate or create a demo user using the portal token.
+     *
+     * Data praktikum dipisahkan per perangkat menggunakan $deviceId yang
+     * dibuat & disimpan di localStorage browser. Token yang sama di laptop/
+     * browser berbeda akan mendapatkan user demo (dan data) yang berbeda.
      */
-    public function authenticateByToken(string $token): ?User
+    public function authenticateByToken(string $token, string $deviceId): ?User
     {
         // 0. Pastikan migrasi kolom is_demo telah dijalankan di database server
         if (!Schema::hasColumn('users', 'is_demo')) {
             throw new \Exception("Kolom 'is_demo' belum ada di tabel users server. Harap jalankan migrasi di terminal server: php artisan migrate --path=database/migrations/2026_09_14_000002_add_demo_fields_to_users_table.php");
+        }
+
+        if (!Schema::hasColumn('users', 'demo_device_id')) {
+            throw new \Exception("Kolom 'demo_device_id' belum ada di tabel users server. Harap jalankan migrasi di terminal server: php artisan migrate --path=database/migrations/2026_10_25_000001_add_demo_device_id_to_users_table.php");
         }
 
         // 1. Cari user di database portal (dengan auto-discovery cPanel)
@@ -89,8 +97,9 @@ class DemoSandboxService
             return null;
         }
 
-        // 2. Check if a demo user already exists for this token or portal_user_id
+        // 2. Cek apakah user demo sudah ada untuk token/portal_user_id ini DI PERANGKAT INI
         $user = User::where('is_demo', true)
+            ->where('demo_device_id', $deviceId)
             ->where(function ($query) use ($token, $portalUser) {
                 $query->where('demo_token', $token)
                       ->orWhere('portal_user_id', $portalUser->id);
@@ -117,7 +126,7 @@ class DemoSandboxService
             ]);
         } else {
             // 3. Buat user demo baru terisolasi untuk peserta ini
-            $email = 'demo_' . $portalUser->id . '_' . Str::random(5) . '@academy.portal';
+            $email = 'demo_' . $portalUser->id . '_' . Str::lower(Str::random(10)) . '@academy.portal';
 
             $user = User::create([
                 'name' => '[Praktikum] ' . $portalUser->name,
@@ -130,6 +139,7 @@ class DemoSandboxService
                 'is_demo' => true,
                 'demo_token' => $token,
                 'portal_user_id' => $portalUser->id,
+                'demo_device_id' => $deviceId,
                 'demo_expires_at' => now()->addHour(),
                 'nama_bumdes' => 'BUMDes Praktikum ' . $portalUser->name,
                 'alamat_bumdes' => 'Desa Praktikum Academy',
